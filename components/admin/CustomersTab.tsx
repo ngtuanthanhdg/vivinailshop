@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { formatVND } from '@/lib/format';
-import { compressImageFile } from '@/lib/image';
+import { compressImageFile, IMAGE_ACCEPT, IMAGE_FORMATS_LABEL, imageErrorMessage } from '@/lib/image';
 import type { LoyaltyGift, ShopState } from '@/lib/types';
 import { useShop } from '../ShopProvider';
 
@@ -35,8 +35,12 @@ export default function CustomersTab() {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    setGiftImage(await compressImageFile(file, 600, 0.78));
-    toast('📷 Đã tải ảnh quà tặng!');
+    try {
+      setGiftImage(await compressImageFile(file, 600, 0.78));
+      toast('📷 Đã tải ảnh quà tặng!');
+    } catch (err) {
+      toast(imageErrorMessage(err));
+    }
   }
 
   async function saveGift() {
@@ -102,9 +106,9 @@ export default function CustomersTab() {
               placeholder="Link ảnh quà..."
               className="flex-1 min-w-0 px-2.5 py-2 rounded-xl border bg-white text-xs"
             />
-            <label className="px-2.5 py-2 rounded-xl border bg-white text-xs font-bold cursor-pointer shrink-0">
+            <label title={`Tải ảnh quà (${IMAGE_FORMATS_LABEL})`} className="px-2.5 py-2 rounded-xl border bg-white text-xs font-bold cursor-pointer shrink-0">
               📷
-              <input type="file" accept="image/*" onChange={handleGiftImage} className="hidden" />
+              <input type="file" accept={IMAGE_ACCEPT} onChange={handleGiftImage} className="hidden" />
             </label>
           </div>
         </div>

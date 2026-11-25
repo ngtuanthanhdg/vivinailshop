@@ -11,14 +11,12 @@ import { HttpError } from './http';
  */
 const UPLOAD_URL = 'https://upload.imagekit.io/api/v1/files/upload';
 
+/** Chỉ nhận JPG, PNG, WebP (khớp với lib/image.ts phía trình duyệt). SVG bị chặn vì có thể chứa mã độc. */
 const EXT_BY_MIME: Record<string, string> = {
   'image/webp': 'webp',
   'image/jpeg': 'jpg',
   'image/jpg': 'jpg',
   'image/png': 'png',
-  'image/gif': 'gif',
-  'image/avif': 'avif',
-  'image/svg+xml': 'svg',
 };
 
 export function imagekitEnabled(): boolean {
@@ -45,15 +43,23 @@ function safeFileName(name: string): string {
   return base || 'anh';
 }
 
+/** Kiểm tra "chữ ký" đầu file để chắc nội dung đúng là ảnh như khai báo (không tin mỗi phần MIME). */
+function hasImageSignature(b: Buffer, mime: string): boolean {
+  if (mime === 'image/png') return b.length > 8 && b.readUInt32BE(0) === 0x89504e47;
+  if (mime === 'image/webp') return b.length > 12 && b.toString('ascii', 0, 4) === 'RIFF' && b.toString('ascii', 8, 12) === 'WEBP';
+  return b.length > 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff; // JPEG
+}
+
 /** Tải 1 ảnh base64 (data:image/...;base64,...) lên ImageKit, trả về URL công khai. */
 export async function uploadDataUrl(dataUrl: string, name: string, subfolder = ''): Promise<string> {
   const match = /^data:(image\/[a-z0-9.+-]+);base64,([\s\S]+)$/i.exec(dataUrl);
   if (!match) throw new HttpError(400, '⚠️ Ảnh tải lên không hợp lệ!');
   const mime = match[1].toLowerCase();
   const ext = EXT_BY_MIME[mime];
-  if (!ext) throw new HttpError(400, '⚠️ Định dạng ảnh không được hỗ trợ!');
+  if (!ext) throw new HttpError(415, '⚠️ Định dạng ảnh không được hỗ trợ (chỉ nhận JPG, PNG, WebP)!');
   const bytes = Buffer.from(match[2], 'base64');
-  if (bytes.length > 10 * 1024 * 1024) throw new HttpError(413, '⚠️ Ảnh quá lớn (tối đa 10MB)!');
+  if (bytes.length > 10 * 1024 * 1024) throw new HttpError(413, '⚠️ Ảnh quá lớn (tối đa 10MB sau khi nén)!');
+  if (!hasImageSignature(bytes, mime)) throw new HttpError(415, '⚠️ File ảnh không hợp lệ hoặc bị lỗi!');
 
   const fileName = `${safeFileName(name)}.${ext}`;
   return postToImageKit(new Blob([bytes], { type: mime }), fileName, subfolder);

@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import { ORDER_CATEGORY } from '@/lib/constants';
 import { formatVND } from '@/lib/format';
-import { compressImageFile, ikImage } from '@/lib/image';
+import { compressImageFile, IMAGE_ACCEPT, IMAGE_FORMATS_LABEL, ikImage, imageErrorMessage, isHttpImageUrl, MAX_IMAGE_MB } from '@/lib/image';
 import { isOrderProduct } from '@/lib/shop';
 import type { Product, ShopState } from '@/lib/types';
 import { SYNC_LABELS, useShop } from '../ShopProvider';
@@ -107,19 +107,29 @@ export default function ProductsTab() {
     if (!files.length) return;
     toast(`📷 Đang nén ${files.length} ảnh...`);
     const compressed: string[] = [];
+    const errors: string[] = [];
     for (const f of files) {
-      // Lưu bản 1000px: ImageKit tự thu nhỏ khi hiển thị nên ảnh vẫn nhẹ mà phóng to vẫn nét.
-      const img = await compressImageFile(f, 1000, 0.8);
-      if (img) compressed.push(img);
+      try {
+        // Lưu bản 1000px: ImageKit tự thu nhỏ khi hiển thị nên ảnh vẫn nhẹ mà phóng to vẫn nét.
+        compressed.push(await compressImageFile(f, 1000, 0.8));
+      } catch (err) {
+        errors.push(imageErrorMessage(err));
+      }
     }
-    setForm((f) => ({ ...f, album: [...f.album, ...compressed] }));
-    toast(`✅ Đã thêm ${compressed.length} ảnh vào album!`);
+    if (compressed.length) setForm((f) => ({ ...f, album: [...f.album, ...compressed] }));
+    if (!errors.length) toast(`✅ Đã thêm ${compressed.length} ảnh vào album!`);
+    else if (errors.length === 1 && !compressed.length) toast(errors[0]);
+    else toast(`${compressed.length ? `✅ Đã thêm ${compressed.length} ảnh • ` : ''}⚠️ Bỏ qua ${errors.length} ảnh không hợp lệ (chỉ nhận ${IMAGE_FORMATS_LABEL}, tối đa ${MAX_IMAGE_MB}MB)`);
   }
 
   function addImageUrl() {
     const url = imageUrl.trim();
     if (!url) {
       toast('⚠️ Vui lòng dán đường dẫn ảnh trước!');
+      return;
+    }
+    if (!isHttpImageUrl(url)) {
+      toast('⚠️ Link ảnh phải bắt đầu bằng https://');
       return;
     }
     setForm((f) => ({ ...f, album: [...f.album, url] }));
@@ -149,9 +159,12 @@ export default function ProductsTab() {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    const img = await compressImageFile(file, 600, 0.78);
-    updateVariant(key, { image: img });
-    toast('📷 Đã tải ảnh cho phân loại!');
+    try {
+      updateVariant(key, { image: await compressImageFile(file, 600, 0.78) });
+      toast('📷 Đã tải ảnh cho phân loại!');
+    } catch (err) {
+      toast(imageErrorMessage(err));
+    }
   }
 
   async function saveProduct() {
@@ -353,11 +366,16 @@ export default function ProductsTab() {
 
             {/* Album nhiều ảnh sản phẩm */}
             <div className="space-y-2">
-              <div className="text-xs font-bold text-stone-700">🖼️ Album ảnh sản phẩm (Chọn nhiều ảnh & bấm &quot;Đặt bìa&quot; để chọn ảnh chính):</div>
+              <div className="text-xs font-bold text-stone-700">
+                🖼️ Album ảnh sản phẩm (Chọn nhiều ảnh & bấm &quot;Đặt bìa&quot; để chọn ảnh chính):
+                <span className="block sm:inline sm:ml-1 text-[11px] font-medium text-stone-400">
+                  Nhận {IMAGE_FORMATS_LABEL} • tối đa {MAX_IMAGE_MB}MB/ảnh
+                </span>
+              </div>
               <div className="flex flex-wrap gap-2">
                 <label className="px-3 py-2 rounded-xl text-xs font-bold text-white cursor-pointer" style={{ backgroundColor: 'var(--accent-main)' }}>
                   📷 Tải nhiều ảnh từ máy
-                  <input type="file" accept="image/*" multiple onChange={handleAlbumUpload} className="hidden" />
+                  <input type="file" accept={IMAGE_ACCEPT} multiple onChange={handleAlbumUpload} className="hidden" />
                 </label>
                 <div className="flex flex-1 min-w-50 gap-1.5">
                   <input
@@ -439,7 +457,7 @@ export default function ProductsTab() {
                     />
                     <label className="px-2 py-1.5 rounded-lg border bg-stone-50 hover:bg-stone-100 text-[11px] font-bold cursor-pointer shrink-0">
                       📷
-                      <input type="file" accept="image/*" className="hidden" onChange={(e) => handleVariantImage(v.key, e)} />
+                      <input type="file" accept={IMAGE_ACCEPT} className="hidden" onChange={(e) => handleVariantImage(v.key, e)} />
                     </label>
                     <button
                       type="button"

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { HANOI_DISTRICTS } from '@/lib/constants';
-import { compressImageFile } from '@/lib/image';
+import { compressImageFile, IMAGE_ACCEPT, IMAGE_FORMATS_LABEL, imageErrorMessage } from '@/lib/image';
 import type { ShopState } from '@/lib/types';
 import { useShop } from '../ShopProvider';
 
@@ -37,7 +37,13 @@ export default function BrandingTab() {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    const logoDataUrl = await compressImageFile(file, 400, 0.85);
+    let logoDataUrl: string;
+    try {
+      logoDataUrl = await compressImageFile(file, 400, 0.85);
+    } catch (err) {
+      toast(imageErrorMessage(err));
+      return;
+    }
     if (await saveSettings({ logoDataUrl })) toast('🖼️ Đã cập nhật Logo cửa hàng!');
   }
 
@@ -88,9 +94,13 @@ export default function BrandingTab() {
           <input type="text" value={shopName} onChange={(e) => setShopName(e.target.value)} placeholder="Tên cửa hàng" className={inputClass} />
           <input type="text" value={tagline} onChange={(e) => setTagline(e.target.value)} placeholder="Khẩu hiệu mô tả ngắn" className={inputClass} />
           <input type="text" value={zaloPhone} onChange={(e) => setZaloPhone(e.target.value)} placeholder="SĐT Zalo nhận đơn" className={inputClass} />
-          <label className="px-3 py-2 rounded-xl border bg-white text-xs font-bold cursor-pointer flex items-center justify-center">
+          <label
+            title={`Nhận ảnh ${IMAGE_FORMATS_LABEL}`}
+            className="px-3 py-2 rounded-xl border bg-white text-xs font-bold cursor-pointer flex items-center justify-center gap-1"
+          >
             🖼️ Tải ảnh Logo Shop từ máy
-            <input type="file" accept="image/*" onChange={handleLogo} className="hidden" />
+            <span className="font-medium text-stone-400">({IMAGE_FORMATS_LABEL})</span>
+            <input type="file" accept={IMAGE_ACCEPT} onChange={handleLogo} className="hidden" />
           </label>
         </div>
         <input
