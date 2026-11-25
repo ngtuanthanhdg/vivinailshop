@@ -256,41 +256,21 @@ export const BG_SWATCHES = [
   { name: '🌌 Tím Ngân Hà', hex: '#191629' },
 ];
 
+/** Kiểu hiệu ứng rơi (hình SVG & màu nằm ở lib/falling.ts). */
 export const FALLING_ICON_STYLES = [
-  { id: 'auto', name: '🪄 Tự động theo Theme', icons: ['✨', '🌸', '💖'] },
-  { id: 'sakura', name: '🌸 Hoa Anh Đào', icons: ['🌸', '🌺', '🌷'] },
-  { id: 'tet', name: '🧧 Mai Đào Tết', icons: ['🌸', '🌼', '🧧', '✨'] },
-  { id: 'snow', name: '❄️ Tuyết Noel', icons: ['❄️', '❅', '🎄', '✨'] },
-  { id: 'mid-autumn', name: '🏮 Đèn Lồng Thu', icons: ['🏮', '🌕', '🐇', '✨'] },
-  { id: 'halloween', name: '🎃 Bí Ngô Halloween', icons: ['🎃', '👻', '🦇', '🕷️'] },
-  { id: 'love-bow', name: '🎀 Nơ & Trái Tim', icons: ['🎀', '💖', '💕', '🍓'] },
-  { id: 'star-bubble', name: '🫧 Sao & Bong Bóng', icons: ['⭐', '✨', '🫧', '🌈'] },
+  { id: 'auto', name: 'Tự động theo Theme' },
+  { id: 'sakura', name: 'Hoa Anh Đào' },
+  { id: 'tet', name: 'Mai Đào Tết' },
+  { id: 'snow', name: 'Tuyết Noel' },
+  { id: 'mid-autumn', name: 'Đèn Lồng Trung Thu' },
+  { id: 'halloween', name: 'Bí Ngô Halloween' },
+  { id: 'love-bow', name: 'Nơ & Trái Tim' },
+  { id: 'star-bubble', name: 'Sao & Bong Bóng' },
+  { id: 'leaves', name: 'Lá Xanh Nhẹ' },
+  { id: 'lavender', name: 'Cánh Hoa Oải Hương' },
+  { id: 'firework', name: 'Pháo Hoa Lấp Lánh' },
+  { id: 'elegant', name: 'Cánh Hoa Thanh Lịch' },
 ];
-
-export const THEME_FALLING_ICONS: Record<string, string[]> = {
-  'tet-lunar': ['🌸', '🌼', '🧧', '✨'],
-  'mid-autumn': ['🏮', '🌕', '🐇', '✨'],
-  'christmas-noel': ['❄️', '🎄', '🎁', '✨'],
-  'halloween-spooky': ['🎃', '👻', '🦇', '✨'],
-  'valentine-love': ['💖', '💝', '🌹', '💕'],
-  'womens-day': ['🌸', '🌷', '💐', '✨'],
-  'new-year-firework': ['🎆', '🎇', '✨', '🥂'],
-  'strawberry-milk': ['🍓', '💖', '🌸', '✨'],
-  'peach-blossom': ['🍑', '🌸', '💕', '✨'],
-  'matcha-cream': ['🍃', '🍵', '✨', '🌼'],
-  'lavender-dream': ['🪻', '💜', '✨', '🦋'],
-  'baby-cloud': ['☁️', '💧', '⭐', '✨'],
-  'milk-tea': ['🧋', '🤎', '✨', '🍪'],
-  'kitty-pink': ['🐾', '🎀', '💖', '🌸'],
-  'sweet-cherry': ['🍒', '💖', '✨', '🍓'],
-  'candy-land': ['🍭', '🍬', '💖', '✨'],
-  'cupcake-bakery': ['🧁', '🍓', '✨', '🍰'],
-  'toy-shop': ['🧸', '🎈', '⭐', '✨'],
-  'disney-castle': ['✨', '👑', '🏰', '💫'],
-  'minnie-bow': ['🎀', '💖', '⚪', '✨'],
-  'fairy-butterfly': ['🦋', '✨', '🌸', '💫'],
-  'rainbow-unicorn': ['🌈', '🦄', '⭐', '💖'],
-};
 
 /** Giá trị lưu trong settings.fontFamily giữ nguyên như bản HTML cũ để file sao lưu tương thích. */
 export const FONT_OPTIONS = [

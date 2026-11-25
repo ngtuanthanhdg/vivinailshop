@@ -1,14 +1,19 @@
 # ViVi NailShop (Next.js)
 
 Bản dựng lại bằng **Next.js 16 + React 19 + Tailwind CSS 4** của file HTML `văn bản.txt`.
-Giao diện, tính năng và luồng mua hàng giữ nguyên như bản cũ. Điểm khác lớn nhất: dữ liệu giờ nằm **trên máy chủ của chính bạn**,
-thay vì phải đồng bộ qua các dịch vụ miễn phí bên ngoài (jsonblob, kvdb, ntfy…).
+Giao diện, tính năng và luồng mua hàng giữ nguyên như bản cũ. Dữ liệu (sản phẩm, đơn hàng, khách hàng, cài đặt) lưu trên
+**Neon (PostgreSQL)**, ảnh lưu trên **ImageKit**.
+
+👉 **Lần đầu cài đặt: làm theo [HUONG_DAN_NEON_IMAGEKIT.md](HUONG_DAN_NEON_IMAGEKIT.md)** (lấy chuỗi kết nối Neon & khoá ImageKit).
 
 ## Chạy thử trên máy
 
 ```bash
 npm install
-npm run dev          # mở http://localhost:3000
+cp .env.example .env.local   # rồi điền DATABASE_URL, IMAGEKIT_PRIVATE_KEY
+npm run db:setup             # tạo bảng trong Neon (chỉ cần 1 lần)
+npm run db:push-local        # (tuỳ chọn) đẩy dữ liệu cũ trong data/shop.json lên Neon + ảnh lên ImageKit
+npm run dev                  # mở http://localhost:3000
 ```
 
 Chạy bản production:
@@ -22,30 +27,30 @@ npm start            # mặc định cổng 3000, đổi bằng: npm start -- -p
 
 Sao chép `.env.example` thành `.env.local` rồi sửa:
 
-| Biến        | Mặc định        | Ý nghĩa                                   |
-| ----------- | --------------- | ----------------------------------------- |
-| `OWNER_PIN` | `8888`          | Mã PIN Chủ shop (toàn quyền)              |
-| `STAFF_PIN` | `1234`          | Mã PIN Nhân viên (sản phẩm, đơn, quà)     |
-| `DATA_DIR`  | `./data`        | Thư mục lưu dữ liệu cửa hàng              |
+| Biến                   | Bắt buộc | Ý nghĩa                                                 |
+| ---------------------- | -------- | ------------------------------------------------------- |
+| `DATABASE_URL`         | ✅       | Chuỗi kết nối Neon (bản có `-pooler`)                   |
+| `IMAGEKIT_PRIVATE_KEY` | ✅       | Private key ImageKit, để máy chủ tải ảnh lên            |
+| `IMAGEKIT_FOLDER`      |          | Thư mục ảnh trên ImageKit (mặc định `/vivi-nailshop`)   |
+| `OWNER_PIN`            |          | Mã PIN Chủ shop (mặc định `8888`)                       |
+| `STAFF_PIN`            |          | Mã PIN Nhân viên (mặc định `1234`)                      |
 
 > **Nên đổi 2 mã PIN** trước khi đưa web lên mạng — mã mặc định ai cũng đoán được.
 
 ## Dữ liệu được lưu ở đâu?
 
-Toàn bộ sản phẩm, đơn hàng, khách hàng, cài đặt nằm trong **một file `data/shop.json`** (tự tạo ở lần chạy đầu với 5 sản phẩm mẫu).
-
-- Mọi điện thoại/máy tính mở web đều thấy cùng dữ liệu; trang tự cập nhật mỗi ~4 giây.
-- Sao lưu: vào **Quản lý → Tab 1 → ⬇️ Sao lưu JSON**, hoặc chép file `data/shop.json`.
-- **Chuyển dữ liệu từ bản HTML cũ:** trên trang cũ bấm *⬇️ Sao lưu JSON* → trên trang mới đăng nhập Chủ shop → *⬆️ Khôi phục* và chọn file vừa tải.
+- **Neon (PostgreSQL)**: 4 bảng `shop_meta` (cài đặt, danh mục), `products`, `orders`, `customers`. Cấu trúc ở `db/schema.sql`.
+  Lần chạy đầu web tự thêm 5 sản phẩm mẫu.
+- **ImageKit**: mọi ảnh sản phẩm, phân loại, logo, quà tặng. Trình duyệt nén ảnh → máy chủ tải lên ImageKit → database chỉ lưu link.
+  Khi hiển thị, web xin ImageKit bản thu nhỏ đúng cỡ (`?tr=w-400`) nên trang tải nhanh.
+- Mọi điện thoại/máy tính mở web đều thấy cùng dữ liệu; trang tự cập nhật (trang quản lý ~4 giây, khách xem shop ~10 giây).
+- Đặt đơn, đổi quà, đổi trạng thái đơn chạy trong transaction nên nhiều người thao tác cùng lúc không ghi đè nhau.
+- Sao lưu: **Quản lý → Tab 1 → ⬇️ Sao lưu JSON**. Khôi phục: **⬆️ Khôi phục** (nhận cả `data/shop.json` của bản trước và file backup bản HTML; ảnh base64 tự được đưa lên ImageKit).
 
 ## Đưa lên mạng (deploy)
 
-Vì dữ liệu lưu thành file, cần chỗ chạy có **ổ đĩa lưu lâu dài**:
-
-- VPS (Ubuntu…) chạy `npm run build && npm start` (dùng pm2 để chạy nền), hoặc
-- Railway / Render / Fly.io có gắn *volume*, đặt `DATA_DIR` trỏ vào volume đó.
-
-⚠️ **Không** dùng được với Vercel/Netlify dạng serverless: ổ đĩa ở đó bị xoá sau mỗi lần chạy nên đơn hàng sẽ mất.
+Dùng được **Vercel** (hoặc bất kỳ hosting Node.js nào, kể cả VPS). Nhớ khai báo các biến môi trường ở trên.
+Chi tiết từng bước: [HUONG_DAN_NEON_IMAGEKIT.md](HUONG_DAN_NEON_IMAGEKIT.md#đưa-web-lên-mạng-vercel).
 
 ## Khác với bản HTML cũ
 
@@ -76,5 +81,9 @@ components/
 lib/
   constants.ts             Dữ liệu mẫu, theme, hoạ tiết, toạ độ Hà Nội
   pricing.ts               Giá combo, cước Grab, mã giảm giá (dùng chung client & server)
-  server/store.ts          Đọc/ghi data/shop.json an toàn khi nhiều người đặt cùng lúc
+  server/db.ts             Kết nối Neon (đọc qua HTTP, ghi bằng transaction)
+  server/store.ts          Đọc/ghi các bảng sản phẩm, đơn hàng, khách hàng, cài đặt
+  server/imagekit.ts       Tải ảnh lên ImageKit (Private key chỉ nằm trên máy chủ)
+db/schema.sql              Cấu trúc bảng (chạy bằng npm run db:setup)
+scripts/db-setup.mjs       Lệnh tạo bảng
 ```

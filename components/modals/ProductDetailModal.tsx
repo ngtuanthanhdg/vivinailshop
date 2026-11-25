@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { formatVND } from '@/lib/format';
+import { ikImage } from '@/lib/image';
 import { getEffectiveUnitPrice } from '@/lib/pricing';
 import type { Product } from '@/lib/types';
 import { useShop } from '../ShopProvider';
@@ -78,14 +79,14 @@ function DetailContent({ product: p }: { product: Product }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="space-y-2.5">
             <div className="aspect-square rounded-2xl overflow-hidden bg-stone-100 border">
-              <img src={mainImg} alt={p.name} className="w-full h-full object-cover" />
+              <img src={ikImage(mainImg, 800)} alt={p.name} className="w-full h-full object-cover" />
             </div>
             {imgs.length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {imgs.map((src, i) => (
                   <img
                     key={i}
-                    src={src}
+                    src={ikImage(src, 120)}
                     alt={`${p.name} ${i + 1}`}
                     onClick={() => selectImage(i)}
                     className={`w-14 h-14 rounded-xl object-cover border-2 cursor-pointer shrink-0 ${
@@ -143,7 +144,7 @@ function DetailContent({ product: p }: { product: Product }) {
                           }`}
                           style={active ? { backgroundColor: 'var(--accent-main)', borderColor: 'var(--accent-main)' } : undefined}
                         >
-                          {v.image && <img src={v.image} alt="" className="w-4 h-4 rounded object-cover" />}
+                          {v.image && <img src={ikImage(v.image, 40)} alt="" className="w-4 h-4 rounded object-cover" />}
                           <span>{v.name}</span>
                           {v.price > 0 && <span className="opacity-85">({formatVND(v.price)})</span>}
                         </button>

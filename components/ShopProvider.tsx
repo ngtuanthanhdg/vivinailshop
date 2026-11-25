@@ -16,7 +16,9 @@ export const SYNC_LABELS: Record<SyncStatus, string> = {
   offline: '⚠️ Mất kết nối máy chủ • Đang thử lại...',
 };
 
-const POLL_MS = 4000;
+/** Quản trị cần thấy đơn mới gần như ngay lập tức; khách xem shop thì 10 giây là đủ (đỡ tải database). */
+const ADMIN_POLL_MS = 4000;
+const PUBLIC_POLL_MS = 10000;
 
 interface AdminSession {
   role: AdminRole;
@@ -149,16 +151,22 @@ export function ShopProvider({ initialData, children }: { initialData: PublicSho
   }, [pullOnce]);
 
   useEffect(() => {
-    const tick = () => {
-      if (document.visibilityState === 'visible' && pendingWrites.current === 0) void pullOnce(false);
+    let lastPull = 0;
+    const tick = (force = false) => {
+      if (document.visibilityState !== 'visible' || pendingWrites.current !== 0) return;
+      const every = adminRef.current ? ADMIN_POLL_MS : PUBLIC_POLL_MS;
+      if (!force && Date.now() - lastPull < every - 200) return;
+      lastPull = Date.now();
+      void pullOnce(false);
     };
-    const timer = setInterval(tick, POLL_MS);
-    document.addEventListener('visibilitychange', tick);
-    window.addEventListener('online', tick);
+    const onWake = () => tick(true);
+    const timer = setInterval(() => tick(), ADMIN_POLL_MS);
+    document.addEventListener('visibilitychange', onWake);
+    window.addEventListener('online', onWake);
     return () => {
       clearInterval(timer);
-      document.removeEventListener('visibilitychange', tick);
-      window.removeEventListener('online', tick);
+      document.removeEventListener('visibilitychange', onWake);
+      window.removeEventListener('online', onWake);
     };
   }, [pullOnce]);
 

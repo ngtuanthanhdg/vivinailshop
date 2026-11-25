@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import { HANOI_DISTRICTS, PAYMENT_METHODS } from '@/lib/constants';
 import { cleanPhone, formatVND } from '@/lib/format';
+import { ikImage } from '@/lib/image';
 import { computeCartTotals } from '@/lib/pricing';
 import { cartItemImage } from '@/lib/shop';
 import type { Customer, Order, ShippingMethod } from '@/lib/types';
@@ -139,7 +140,7 @@ export default function CartModal() {
             cart.map((item, idx) => (
               <div key={`${item.productId}-${item.variantIdx}`} className="flex items-center gap-2.5 p-2.5 rounded-2xl border bg-stone-50/70">
                 <img
-                  src={cartItemImage(item, shop.products, 'https://placehold.co/100x100/FAF5EF/7C583A?text=SP')}
+                  src={ikImage(cartItemImage(item, shop.products, 'https://placehold.co/100x100/FAF5EF/7C583A?text=SP'), 120)}
                   alt={item.name}
                   className="w-12 h-12 rounded-xl object-cover border shrink-0"
                 />

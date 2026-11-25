@@ -6,9 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:setup": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/db-setup.mjs",
+    "db:push-local": "tsx --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/push-local-data.ts"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.2.1",
     "next": "16.4.6",
     "react": "19.3.0",
     "react-dom": "19.3.0"
@@ -21,6 +24,10 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
     "tailwindcss": "4.3.3",
+    "tsx": "^4.23.15",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

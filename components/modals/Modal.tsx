@@ -19,7 +19,7 @@ export function ModalOverlay({
       role="dialog"
       aria-modal="true"
       aria-hidden={hidden || undefined}
-      className={`fixed inset-0 ${zIndex} ${dark ? 'bg-black/60' : 'bg-black/50'} backdrop-blur-xs items-center justify-center ${padding} ${hidden ? 'hidden' : 'flex'}`}
+      className={`modal-overlay fixed inset-0 ${zIndex} ${dark ? 'bg-black/60' : 'bg-black/50'} backdrop-blur-xs items-center justify-center ${padding} ${hidden ? 'hidden' : 'flex'}`}
     >
       {children}
     </div>

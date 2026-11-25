@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { formatVND } from '@/lib/format';
 import { cartItemImage } from '@/lib/shop';
 import { useShop } from '../ShopProvider';
+import { Bone } from '../storefront/StorefrontSkeleton';
 import { CloseButton, ModalOverlay } from './Modal';
 import { useCustomerLookup } from './useCustomerLookup';
 
@@ -54,7 +55,20 @@ export default function TrackOrderModal() {
           {digits.length < 9 ? (
             <div className="text-center py-6 text-xs text-stone-400">Nhập số điện thoại (9–11 số) để xem lịch sử đơn hàng và điểm tích lũy.</div>
           ) : loading ? (
-            <div className="text-center py-6 text-xs text-stone-400">🔎 Đang tìm đơn hàng...</div>
+            <div className="space-y-2.5" aria-busy="true" aria-label="Đang tìm đơn hàng">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="p-3 rounded-2xl border bg-stone-50 flex items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2.5 flex-1">
+                    <Bone className="w-10 h-10 rounded-xl shrink-0" />
+                    <div className="flex-1 space-y-1.5">
+                      <Bone className="h-3 w-24 rounded-full" />
+                      <Bone className="h-2.5 w-40 rounded-full" />
+                    </div>
+                  </div>
+                  <Bone className="h-6 w-20 rounded-full" />
+                </div>
+              ))}
+            </div>
           ) : !orders.length ? (
             <div className="text-center py-6 text-xs text-stone-400">Không tìm thấy đơn hàng nào khớp với số điện thoại này.</div>
           ) : (

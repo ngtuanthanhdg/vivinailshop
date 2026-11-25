@@ -1,6 +1,7 @@
 import { adminResponse } from '@/lib/server/admin';
 import { HttpError, jsonError, readJsonBody, requireRole } from '@/lib/server/http';
-import { updateState } from '@/lib/server/store';
+import { createImageUploader, externalizeSettingsImages } from '@/lib/server/imagekit';
+import { mutate, readState, saveSettings } from '@/lib/server/store';
 import { normalizeSettings } from '@/lib/shop';
 import type { Settings } from '@/lib/types';
 
@@ -12,19 +13,22 @@ export async function PATCH(request: Request) {
   try {
     const role = requireRole(request);
     const body = await readJsonBody<{ settings?: Partial<Settings> }>(request);
-    const patch = body.settings && typeof body.settings === 'object' ? { ...body.settings } : {};
+    const raw = body.settings && typeof body.settings === 'object' ? { ...body.settings } : {};
     if (role !== 'owner') {
-      const keys = Object.keys(patch);
+      const keys = Object.keys(raw);
       if (keys.some((k) => k !== 'loyaltyGifts')) {
         throw new HttpError(403, '⛔ Chức năng này chỉ dành cho Chủ shop!');
       }
     }
-    if ('shopName' in patch && !String(patch.shopName || '').trim()) patch.shopName = 'ViVi NailShop';
+    if ('shopName' in raw && !String(raw.shopName || '').trim()) raw.shopName = 'ViVi NailShop';
 
-    const { state } = await updateState((draft) => {
-      draft.settings = normalizeSettings(patch, draft.settings);
+    // Logo / ảnh quà tặng dạng base64 → đưa lên ImageKit trước.
+    const patch = await externalizeSettingsImages(raw, createImageUploader());
+
+    await mutate(async ({ exec, meta }) => {
+      await saveSettings(exec, normalizeSettings(patch, meta.settings));
     });
-    return adminResponse(state, role);
+    return adminResponse(await readState(), role);
   } catch (err) {
     return jsonError(err);
   }

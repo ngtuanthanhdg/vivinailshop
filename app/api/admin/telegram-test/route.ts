@@ -1,6 +1,6 @@
 import { adminView } from '@/lib/server/admin';
 import { HttpError, jsonError, readJsonBody, requireRole } from '@/lib/server/http';
-import { updateState } from '@/lib/server/store';
+import { mutate, readState, saveSettings } from '@/lib/server/store';
 import { escapeHtml, sendTelegramMessage } from '@/lib/server/telegram';
 
 /** Lưu Token/Chat ID rồi gửi tin nhắn thử tới Telegram. */
@@ -12,10 +12,10 @@ export async function POST(request: Request) {
     const chatId = String(body.chatId || '').trim();
     if (!token || !chatId) throw new HttpError(400, '⚠️ Vui lòng nhập Bot Token và Chat ID trước!');
 
-    const { state } = await updateState((draft) => {
-      draft.settings.telegramToken = token;
-      draft.settings.telegramChatId = chatId;
+    await mutate(async ({ exec, meta }) => {
+      await saveSettings(exec, { ...meta.settings, telegramToken: token, telegramChatId: chatId });
     });
+    const state = await readState();
     const time = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
     const ok = await sendTelegramMessage(
       token,

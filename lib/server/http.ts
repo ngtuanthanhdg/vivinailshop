@@ -1,5 +1,6 @@
 import { unstable_rethrow } from 'next/navigation';
 import type { AdminRole } from '@/lib/types';
+import { isMissingTableError } from './db';
 
 export class HttpError extends Error {
   constructor(public status: number, message: string) {
@@ -14,6 +15,10 @@ export function jsonError(err: unknown): Response {
     return Response.json({ error: err.message }, { status: err.status });
   }
   console.error(err);
+  if (isMissingTableError(err)) {
+    console.error('👉 Database Neon chưa có bảng. Chạy: npm run db:setup (xem HUONG_DAN_NEON_IMAGEKIT.md)');
+    return Response.json({ error: '⚠️ Máy chủ chưa khởi tạo database, vui lòng báo chủ shop!' }, { status: 503 });
+  }
   return Response.json({ error: 'Lỗi máy chủ, vui lòng thử lại sau.' }, { status: 500 });
 }
 

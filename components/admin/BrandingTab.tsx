@@ -37,7 +37,7 @@ export default function BrandingTab() {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    const logoDataUrl = await compressImageFile(file, 220, 0.7);
+    const logoDataUrl = await compressImageFile(file, 400, 0.85);
     if (await saveSettings({ logoDataUrl })) toast('🖼️ Đã cập nhật Logo cửa hàng!');
   }
 

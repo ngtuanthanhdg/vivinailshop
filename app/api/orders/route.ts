@@ -3,7 +3,7 @@ import { HANOI_DISTRICTS, PAYMENT_METHODS } from '@/lib/constants';
 import { cleanPhone } from '@/lib/format';
 import { computeCartTotals, priceCartItems } from '@/lib/pricing';
 import { HttpError, jsonError, readJsonBody } from '@/lib/server/http';
-import { updateState } from '@/lib/server/store';
+import { addSold, insertOrders, mutate, rowToCustomer, rowToProduct } from '@/lib/server/store';
 import { buildOrderMessage, notifyShop } from '@/lib/server/telegram';
 import type { CartItem, Order, ShippingMethod } from '@/lib/types';
 
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     const method: ShippingMethod = body.shippingMethod === 'standard' || body.shippingMethod === 'pickup' ? body.shippingMethod : 'grab';
     const grabDistrict = HANOI_DISTRICTS[String(body.grabDistrict || '')] ? String(body.grabDistrict) : '';
     const grabWard = grabDistrict && HANOI_DISTRICTS[grabDistrict].wards[String(body.grabWard || '')] ? String(body.grabWard) : '';
-    const requested = Array.isArray(body.items) ? body.items : [];
+    const requested = Array.isArray(body.items) ? body.items.slice(0, 200) : [];
 
     if (!requested.length) throw new HttpError(400, '⚠️ Giỏ hàng đang trống!');
     if (!customerName || !phone) throw new HttpError(400, '⚠️ Vui lòng nhập đầy đủ Tên và Số điện thoại!');
@@ -58,10 +58,14 @@ export async function POST(request: Request) {
       shipLabel = 'Giao hàng toàn quốc';
     }
 
-    const { state, result: order } = await updateState((draft) => {
+    const { order, customer, settings } = await mutate(async ({ exec, meta, now: nowMs }) => {
+      // Khoá các sản phẩm trong giỏ để giá / tình trạng hàng không đổi giữa chừng.
+      const ids = [...new Set(requested.map((r) => String(r.productId || '')))];
+      const products = (await exec('SELECT * FROM products WHERE id = ANY($1::text[]) FOR UPDATE', [ids])).map(rowToProduct);
+
       const items: CartItem[] = [];
       for (const req of requested) {
-        const prod = draft.products.find((p) => p.id === req.productId);
+        const prod = products.find((p) => p.id === req.productId);
         if (!prod) throw new HttpError(409, '⚠️ Có sản phẩm trong giỏ không còn tồn tại, vui lòng xoá khỏi giỏ!');
         if (prod.inStock === false) throw new HttpError(409, `⚠️ "${prod.name}" hiện đang tạm hết hàng!`);
         const qty = Math.floor(Number(req.qty || 0));
@@ -87,22 +91,23 @@ export async function POST(request: Request) {
         });
       }
 
-      const pricedItems = priceCartItems(items, draft.products);
+      const pricedItems = priceCartItems(items, products);
       const totals = computeCartTotals({
         items: pricedItems,
-        settings: draft.settings,
+        settings: meta.settings,
         shippingMethod: method,
         grabDistrict,
         grabWard,
         coupon,
       });
-
-      const nowMs = Date.now();
-      let orderId = 'DH' + String(nowMs).slice(-6);
-      for (let n = 1; draft.orders.some((o) => o.id === orderId); n++) {
-        orderId = 'DH' + String(nowMs + n).slice(-6);
-      }
       const earnedPoints = Math.floor(totals.subtotal / 10000);
+
+      // Mã đơn = DH + 6 số cuối thời gian; trùng thì lấy số kế tiếp.
+      let orderId = '';
+      for (let n = 0; !orderId; n++) {
+        const candidate = 'DH' + String(nowMs + n).slice(-6);
+        if (!(await exec('SELECT 1 FROM orders WHERE id = $1', [candidate])).length) orderId = candidate;
+      }
 
       const newOrder: Order = {
         id: orderId,
@@ -122,34 +127,32 @@ export async function POST(request: Request) {
         createdAt: new Date(nowMs).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
         createdAtMs: nowMs,
       };
-      draft.orders.unshift(newOrder);
+      await insertOrders(exec, [newOrder]);
 
       // Cập nhật số lượng đã bán của từng sản phẩm
-      for (const item of pricedItems) {
-        const p = draft.products.find((x) => x.id === item.productId);
-        if (p) {
-          p.sold = Number(p.sold || 0) + item.qty;
-          p.updatedAt = nowMs;
-        }
-      }
+      const soldDeltas: Record<string, number> = {};
+      for (const item of pricedItems) soldDeltas[item.productId] = (soldDeltas[item.productId] || 0) + item.qty;
+      await addSold(exec, soldDeltas, nowMs);
 
       // Cộng điểm tích lũy khách hàng
-      const prev = draft.customers[phoneDigits] || { phone: phoneDigits, name: customerName, points: 0, totalSpent: 0, orderCount: 0 };
-      draft.customers[phoneDigits] = {
-        ...prev,
-        phone: phoneDigits,
-        name: customerName,
-        lastAddress: fullAddress,
-        points: (prev.points || 0) + earnedPoints,
-        totalSpent: (prev.totalSpent || 0) + totals.grandTotal,
-        orderCount: (prev.orderCount || 0) + 1,
-      };
-      return newOrder;
+      const [customerRow] = await exec(
+        `INSERT INTO customers (phone, name, points, total_spent, order_count, last_address)
+         VALUES ($1, $2, $3, $4, 1, $5)
+         ON CONFLICT (phone) DO UPDATE SET
+           name         = EXCLUDED.name,
+           last_address = EXCLUDED.last_address,
+           points       = customers.points + EXCLUDED.points,
+           total_spent  = customers.total_spent + EXCLUDED.total_spent,
+           order_count  = customers.order_count + 1
+         RETURNING *`,
+        [phoneDigits, customerName, earnedPoints, Math.round(totals.grandTotal), fullAddress],
+      );
+      return { order: newOrder, customer: rowToCustomer(customerRow), settings: meta.settings };
     });
 
-    after(() => notifyShop(state.settings, buildOrderMessage(order, state.settings.shopName)));
+    after(() => notifyShop(settings, buildOrderMessage(order, settings.shopName)));
 
-    return Response.json({ order, customer: state.customers[phoneDigits] });
+    return Response.json({ order, customer });
   } catch (err) {
     return jsonError(err);
   }

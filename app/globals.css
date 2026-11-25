@@ -29,10 +29,102 @@
   --border-soft: #e4d5c3;
 }
 
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   background-color: var(--bg-main);
   color: var(--text-dark);
   font-family: var(--font-be-vietnam), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background-color: color-mix(in srgb, var(--accent-main) 22%, transparent);
+}
+
+/* Viền nổi bật khi dùng bàn phím (Tab), không hiện khi bấm chuột */
+:focus-visible {
+  outline: 2px solid var(--accent-main);
+  outline-offset: 2px;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--accent-main) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-main) 18%, transparent);
+}
+
+/* Thanh cuộn mảnh, cùng tông màu shop */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--accent-main) 35%, transparent) transparent;
+}
+
+/* ======================== SKELETON (khung xương lúc đang tải) ======================== */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: color-mix(in srgb, var(--border-soft) 55%, white);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+}
+@keyframes skeletonShimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* ======================== HIỆU ỨNG MỞ MODAL & THÔNG BÁO ======================== */
+.modal-overlay {
+  animation: overlayIn 0.18s ease-out;
+}
+.modal-overlay > * {
+  animation: panelIn 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+}
+@keyframes overlayIn {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+}
+
+.toast-pop {
+  animation: toastIn 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after,
+  .modal-overlay,
+  .modal-overlay > *,
+  .toast-pop {
+    animation: none;
+  }
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 .shop-root {
@@ -135,52 +227,156 @@ body {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='46' height='46' viewBox='0 0 46 46'%3E%3Cpath fill='%23eab308' fill-opacity='0.2' d='M11 31l3-13 9 7 9-7 3 13H11z'/%3E%3C/svg%3E");
 }
 
-/* ======================== HIỆU ỨNG ICON RƠI THEO THEME ======================== */
-.falling-icons-layer {
+/* ======================== HIỆU ỨNG RƠI (SVG) THEO THEME ======================== */
+/* 3 chuyển động lồng nhau, chỉ dùng transform/opacity nên mượt và nhẹ máy:
+   .falling-item  → rơi xuống (hoặc bay lên) + mờ dần ở 2 đầu
+   .falling-sway  → đung đưa trái/phải theo nhịp sin
+   .falling-motion→ lật 3D / xoay / lấp lánh / lắc lư tuỳ hình */
+.falling-layer {
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 20;
   overflow: hidden;
+  contain: strict;
 }
 
-.falling-icon-item {
-  position: fixed;
-  top: -48px;
-  left: var(--left-lg);
-  user-select: none;
-  pointer-events: none;
+.falling-item {
+  position: absolute;
+  top: 0;
+  left: var(--x-lg);
+  width: var(--size);
+  height: var(--size);
   will-change: transform, opacity;
-  animation-name: themeIconFall;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
+  animation: fallDown var(--fall-dur) linear var(--fall-delay) infinite;
+}
+.falling-item.is-rising {
+  animation-name: floatUp;
 }
 
 @media (max-width: 639.98px) {
-  .falling-icon-item {
-    left: var(--left-sm);
+  .falling-item {
+    left: var(--x-sm);
   }
 }
 
-@keyframes themeIconFall {
+.falling-sway {
+  display: block;
+  width: 100%;
+  height: 100%;
+  perspective: 160px;
+  animation: fallSway var(--sway-dur) ease-in-out var(--sway-delay) infinite alternate;
+}
+
+.falling-motion {
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: var(--alpha);
+  filter: var(--blur) drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.08));
+  animation-duration: var(--motion-dur);
+  animation-iteration-count: infinite;
+  animation-delay: var(--sway-delay);
+}
+.falling-motion.motion-flutter {
+  animation-name: fallFlutter;
+  animation-timing-function: linear;
+}
+.falling-motion.motion-spin {
+  animation-name: fallSpin;
+  animation-timing-function: linear;
+}
+.falling-motion.motion-twinkle {
+  animation-name: fallTwinkle;
+  animation-timing-function: ease-in-out;
+}
+.falling-motion.motion-tilt {
+  animation-name: fallTilt;
+  animation-timing-function: ease-in-out;
+}
+
+@keyframes fallDown {
   0% {
-    transform: translate3d(0, -40px, 0) rotate(0deg);
+    transform: translate3d(0, -8vh, 0);
     opacity: 0;
   }
-  12% {
-    opacity: 0.85;
-  }
+  8%,
   88% {
-    opacity: 0.85;
+    opacity: 1;
   }
   100% {
-    transform: translate3d(var(--drift-x, 36px), calc(100vh + 60px), 0) rotate(var(--spin-deg, 280deg));
+    transform: translate3d(0, 106vh, 0);
     opacity: 0;
+  }
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translate3d(0, 106vh, 0);
+    opacity: 0;
+  }
+  10%,
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(0, -8vh, 0);
+    opacity: 0;
+  }
+}
+
+@keyframes fallSway {
+  from {
+    transform: translate3d(calc(var(--sway) * -1), 0, 0);
+  }
+  to {
+    transform: translate3d(var(--sway), 0, 0);
+  }
+}
+
+/* Cánh hoa / lá / giấy màu: vừa xoay vừa lật nghiêng như bị gió thổi */
+@keyframes fallFlutter {
+  0% {
+    transform: rotateZ(0deg) rotateX(0deg) rotateY(0deg);
+  }
+  50% {
+    transform: rotateZ(calc(var(--rot) * 0.5)) rotateX(160deg) rotateY(50deg);
+  }
+  100% {
+    transform: rotateZ(var(--rot)) rotateX(360deg) rotateY(0deg);
+  }
+}
+
+@keyframes fallSpin {
+  to {
+    transform: rotate(var(--rot));
+  }
+}
+
+@keyframes fallTwinkle {
+  0%,
+  100% {
+    transform: scale(0.55) rotate(0deg);
+    opacity: calc(var(--alpha) * 0.45);
+  }
+  50% {
+    transform: scale(1.08) rotate(45deg);
+    opacity: var(--alpha);
+  }
+}
+
+@keyframes fallTilt {
+  0%,
+  100% {
+    transform: rotate(-14deg);
+  }
+  50% {
+    transform: rotate(14deg);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .falling-icons-layer {
+  .falling-layer {
     display: none;
   }
 }

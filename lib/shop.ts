@@ -1,11 +1,9 @@
 import {
   DEFAULT_CATEGORIES,
   DEFAULT_SETTINGS,
-  FALLING_ICON_STYLES,
   FONT_OPTIONS,
   ORDER_CATEGORY,
   PLACEHOLDER_IMG,
-  THEME_FALLING_ICONS,
   THEME_PRESETS,
 } from './constants';
 import type { CartItem, LoyaltyGift, Product, PublicShopState, Settings, ShopState, Variant } from './types';
@@ -52,15 +50,6 @@ export function getThemeVars(settings: Settings): Record<string, string> {
 
 export function resolveFontCss(fontFamily: string): string {
   return (FONT_OPTIONS.find((f) => f.value === fontFamily) || FONT_OPTIONS[0]).css;
-}
-
-export function getFallingIcons(settings: Pick<Settings, 'fallingStyle' | 'themePreset'>): string[] {
-  const styleId = settings.fallingStyle || 'auto';
-  if (styleId !== 'auto') {
-    const picked = FALLING_ICON_STYLES.find((s) => s.id === styleId);
-    if (picked) return picked.icons;
-  }
-  return THEME_FALLING_ICONS[settings.themePreset] || ['✨', '🌸', '💖', '⭐'];
 }
 
 // ======================== CHUẨN HOÁ DỮ LIỆU (dùng khi nhập file sao lưu) ========================

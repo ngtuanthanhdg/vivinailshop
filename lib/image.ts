@@ -1,4 +1,5 @@
-// Nén ảnh ngay trên trình duyệt thành WebP base64 trước khi lưu (giống bản HTML cũ).
+// Nén ảnh ngay trên trình duyệt thành WebP base64 trước khi gửi lên máy chủ;
+// máy chủ sẽ đưa ảnh lên ImageKit và chỉ lưu đường link vào database.
 
 function fitSize(w: number, h: number, maxDim: number): [number, number] {
   if (w > maxDim || h > maxDim) {
@@ -32,12 +33,11 @@ export function compressImageFile(file: File, maxDim = 480, quality = 0.68): Pro
   });
 }
 
-export function compressDataUrlString(dataUrl: string, maxDim = 560, quality = 0.72): Promise<string> {
-  return new Promise((resolve) => {
-    if (!dataUrl || !dataUrl.startsWith('data:image/')) return resolve(dataUrl);
-    const img = new Image();
-    img.onload = () => resolve(drawToWebp(img, maxDim, quality));
-    img.onerror = () => resolve(dataUrl);
-    img.src = dataUrl;
-  });
+/**
+ * Ảnh trên ImageKit: xin bản thu nhỏ đúng cỡ hiển thị (ImageKit tự đổi kích thước + định dạng tối ưu).
+ * Ảnh không phải của ImageKit (link ngoài, base64) thì giữ nguyên.
+ */
+export function ikImage(src: string | undefined, width: number): string {
+  if (!src || !/^https:\/\/ik\.imagekit\.io\//.test(src) || /[?&]tr=/.test(src)) return src || '';
+  return `${src}${src.includes('?') ? '&' : '?'}tr=w-${Math.round(width)},q-80`;
 }

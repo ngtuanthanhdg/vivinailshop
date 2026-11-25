@@ -35,7 +35,7 @@ export default function CustomersTab() {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    setGiftImage(await compressImageFile(file, 320, 0.66));
+    setGiftImage(await compressImageFile(file, 600, 0.78));
     toast('📷 Đã tải ảnh quà tặng!');
   }
 

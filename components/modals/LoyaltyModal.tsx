@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import type { Customer } from '@/lib/types';
 import { useShop } from '../ShopProvider';
+import { Bone } from '../storefront/StorefrontSkeleton';
 import { CloseButton, ModalOverlay } from './Modal';
 import { useCustomerLookup } from './useCustomerLookup';
 
@@ -56,7 +57,10 @@ export default function LoyaltyModal() {
           {digits.length < 9 ? (
             'Nhập đủ số điện thoại (9–11 số) để xem số điểm tích lũy hiện tại.'
           ) : !ready ? (
-            '🔎 Đang kiểm tra điểm...'
+            <span className="flex items-center gap-2" aria-busy="true">
+              <Bone className="h-3 w-40 rounded-full" />
+              <Bone className="h-3 w-16 rounded-full" />
+            </span>
           ) : !customer ? (
             <>
               SĐT <b>{digits}</b> hiện có <b>0 điểm</b>. Hãy đặt đơn để tích điểm tự động nhé!

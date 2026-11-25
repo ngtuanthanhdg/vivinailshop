@@ -2,6 +2,8 @@
 
 import { useRef } from 'react';
 import { BG_PATTERNS, BG_SWATCHES, FALLING_ICON_STYLES, FONT_OPTIONS, THEME_PRESETS } from '@/lib/constants';
+import { getFallingSet } from '@/lib/falling';
+import FallingShape from '../storefront/FallingShape';
 import type { ShopState } from '@/lib/types';
 import { useShop } from '../ShopProvider';
 
@@ -141,7 +143,15 @@ export default function AppearanceTab() {
               }`}
             >
               <span className="truncate">{st.name}</span>
-              <span className="text-xs shrink-0">{st.icons[0]}</span>
+              <span className="flex items-center gap-0.5 shrink-0">
+                {getFallingSet({ fallingStyle: st.id, themePreset: settings.themePreset })
+                  .slice(0, 3)
+                  .map((d, i) => (
+                    <span key={i} className="w-3.5 h-3.5">
+                      <FallingShape shape={d.shape} color={d.colors[0]} />
+                    </span>
+                  ))}
+              </span>
             </button>
           ))}
         </div>

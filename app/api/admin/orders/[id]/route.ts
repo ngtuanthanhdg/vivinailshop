@@ -1,8 +1,8 @@
 import { CANCELLED_STATUS } from '@/lib/constants';
 import { adminResponse } from '@/lib/server/admin';
 import { HttpError, jsonError, readJsonBody, requireRole } from '@/lib/server/http';
-import { updateState } from '@/lib/server/store';
-import { ORDER_STATUSES } from '@/lib/types';
+import { addSold, mutate, readState } from '@/lib/server/store';
+import { ORDER_STATUSES, type CartItem } from '@/lib/types';
 
 /** Đổi trạng thái đơn. Huỷ đơn → trừ lại "Đã bán"; mở lại đơn đã huỷ → cộng lại. */
 export async function PATCH(request: Request, ctx: RouteContext<'/api/admin/orders/[id]'>) {
@@ -15,10 +15,10 @@ export async function PATCH(request: Request, ctx: RouteContext<'/api/admin/orde
     }
     const newStatus = String(status);
 
-    const { state } = await updateState((draft) => {
-      const o = draft.orders.find((x) => x.id === id);
-      if (!o) throw new HttpError(404, 'Không tìm thấy đơn hàng.');
-      const prevStatus = o.status;
+    await mutate(async ({ exec, now }) => {
+      const [row] = await exec('SELECT status, items FROM orders WHERE id = $1 FOR UPDATE', [id]);
+      if (!row) throw new HttpError(404, 'Không tìm thấy đơn hàng.');
+      const prevStatus = String(row.status);
       if (prevStatus === newStatus) return;
 
       const direction =
@@ -26,18 +26,16 @@ export async function PATCH(request: Request, ctx: RouteContext<'/api/admin/orde
         : prevStatus === CANCELLED_STATUS && newStatus !== CANCELLED_STATUS ? 1
         : 0;
       if (direction) {
-        const now = Date.now();
-        for (const it of o.items || []) {
-          const p = draft.products.find((x) => x.id === it.productId);
-          if (p) {
-            p.sold = Math.max(0, Number(p.sold || 0) + direction * Number(it.qty || 0));
-            p.updatedAt = now;
-          }
+        const deltas: Record<string, number> = {};
+        for (const it of (Array.isArray(row.items) ? row.items : []) as CartItem[]) {
+          if (!it?.productId) continue;
+          deltas[it.productId] = (deltas[it.productId] || 0) + direction * Number(it.qty || 0);
         }
+        await addSold(exec, deltas, now);
       }
-      o.status = newStatus;
+      await exec('UPDATE orders SET status = $2 WHERE id = $1', [id, newStatus]);
     });
-    return adminResponse(state, role);
+    return adminResponse(await readState(), role);
   } catch (err) {
     return jsonError(err);
   }

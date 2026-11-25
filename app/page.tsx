@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
-import { Suspense } from "react";
+import { cache, Suspense } from "react";
 import ShopApp from "@/components/ShopApp";
+import StorefrontSkeleton from "@/components/storefront/StorefrontSkeleton";
 import { readPublicState } from "@/lib/server/store";
+
+/** Tiêu đề trang và nội dung trang dùng chung 1 lượt đọc database cho mỗi lần truy cập. */
+const loadShop = cache(readPublicState);
 
 export async function generateMetadata(): Promise<Metadata> {
   await connection();
-  const { settings } = await readPublicState();
+  const { settings } = await loadShop();
   return {
     title: `${settings.shopName || "ViVi NailShop"} — Phụ Kiện Nail & Order Nội Địa`,
     description: settings.tagline || undefined,
@@ -15,7 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function Page() {
   return (
-    <Suspense fallback={<LoadingScreen />}>
+    <Suspense fallback={<StorefrontSkeleton />}>
       <ShopLoader />
     </Suspense>
   );
@@ -24,17 +28,6 @@ export default function Page() {
 /** Đọc dữ liệu cửa hàng mới nhất ở mỗi lượt truy cập rồi render sẵn trên máy chủ (tốt cho SEO). */
 async function ShopLoader() {
   await connection();
-  const data = await readPublicState();
+  const data = await loadShop();
   return <ShopApp initialData={data} />;
-}
-
-function LoadingScreen() {
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-3 text-sm font-bold" style={{ color: "var(--accent-main)" }}>
-      <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl text-white shadow animate-pulse" style={{ backgroundColor: "var(--accent-main)" }}>
-        💅
-      </div>
-      <span>Đang tải cửa hàng...</span>
-    </div>
-  );
 }

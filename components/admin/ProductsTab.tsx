@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import { ORDER_CATEGORY } from '@/lib/constants';
 import { formatVND } from '@/lib/format';
-import { compressDataUrlString, compressImageFile } from '@/lib/image';
+import { compressImageFile, ikImage } from '@/lib/image';
 import { isOrderProduct } from '@/lib/shop';
 import type { Product, ShopState } from '@/lib/types';
 import { SYNC_LABELS, useShop } from '../ShopProvider';
@@ -108,7 +108,8 @@ export default function ProductsTab() {
     toast(`📷 Đang nén ${files.length} ảnh...`);
     const compressed: string[] = [];
     for (const f of files) {
-      const img = await compressImageFile(f, 480, 0.68);
+      // Lưu bản 1000px: ImageKit tự thu nhỏ khi hiển thị nên ảnh vẫn nhẹ mà phóng to vẫn nét.
+      const img = await compressImageFile(f, 1000, 0.8);
       if (img) compressed.push(img);
     }
     setForm((f) => ({ ...f, album: [...f.album, ...compressed] }));
@@ -148,7 +149,7 @@ export default function ProductsTab() {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    const img = await compressImageFile(file, 360, 0.66);
+    const img = await compressImageFile(file, 600, 0.78);
     updateVariant(key, { image: img });
     toast('📷 Đã tải ảnh cho phân loại!');
   }
@@ -220,19 +221,11 @@ export default function ProductsTab() {
     toast(ok ? '✅ Đã đồng bộ dữ liệu mới nhất!' : '⚠️ Chưa kết nối được máy chủ lúc này!');
   }
 
-  async function optimizeImages() {
-    toast('⚡ Đang nén tối ưu toàn bộ ảnh...');
-    const updates = [];
-    for (const p of state.products) {
-      const images: string[] = [];
-      for (const img of p.images || []) images.push(await compressDataUrlString(img, 560, 0.72));
-      const variants = [];
-      for (const v of p.variants || []) variants.push({ ...v, image: v.image ? await compressDataUrlString(v.image, 420, 0.7) : '' });
-      updates.push({ id: p.id, images, variants });
-    }
-    if (!updates.length) return;
-    const res = await adminRequest('PATCH', '/api/admin/products', { updates });
-    if (res) toast('✅ Đã nén nhẹ toàn bộ ảnh & đồng bộ xong!');
+  /** Dữ liệu cũ còn ảnh base64 trong database → đưa hết lên ImageKit (chạy lại nhiều lần không sao). */
+  async function migrateImages() {
+    toast('☁️ Đang đưa ảnh cũ lên ImageKit, vui lòng chờ...');
+    const res = await adminRequest<ShopState & { migrated: number }>('POST', '/api/admin/images/migrate');
+    if (res) toast(res.migrated ? `✅ Đã chuyển ảnh của ${res.migrated} mục lên ImageKit!` : '✅ Mọi ảnh đều đã nằm trên ImageKit!');
   }
 
   function exportBackup() {
@@ -290,8 +283,8 @@ export default function ProductsTab() {
             <button type="button" onClick={syncNow} className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-white" style={{ backgroundColor: 'var(--accent-main)' }}>
               ☁️ Đồng bộ ngay
             </button>
-            <button type="button" onClick={optimizeImages} className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white border">
-              ⚡ Nén nhẹ ảnh
+            <button type="button" onClick={migrateImages} className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white border">
+              ☁️ Đưa ảnh lên ImageKit
             </button>
             <button type="button" onClick={exportBackup} className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white border">
               ⬇️ Sao lưu JSON
@@ -388,7 +381,7 @@ export default function ProductsTab() {
                 ) : (
                   form.album.map((src, idx) => (
                     <div key={`${idx}-${src.slice(-24)}`} className="relative aspect-square rounded-xl overflow-hidden border bg-white group">
-                      <img src={src} alt={`Ảnh ${idx + 1}`} className="w-full h-full object-cover" />
+                      <img src={ikImage(src, 200)} alt={`Ảnh ${idx + 1}`} className="w-full h-full object-cover" />
                       <div className="absolute inset-x-0 bottom-0 bg-black/60 p-1 flex items-center justify-between gap-1">
                         <button
                           type="button"
@@ -512,7 +505,7 @@ export default function ProductsTab() {
                 <div key={p.id} className="p-2.5 rounded-2xl border bg-white flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5">
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     <img
-                      src={p.images?.[0] || 'https://placehold.co/96x96/FAF5EF/7C583A?text=SP'}
+                      src={ikImage(p.images?.[0], 120) || 'https://placehold.co/96x96/FAF5EF/7C583A?text=SP'}
                       alt={p.name}
                       className={`w-12 h-12 rounded-xl object-cover border shrink-0 ${isOut ? 'opacity-50' : ''}`}
                     />

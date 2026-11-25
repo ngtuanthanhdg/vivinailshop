@@ -1,5 +1,6 @@
 'use client';
 
+import { ikImage } from '@/lib/image';
 import { useShop } from '../ShopProvider';
 
 export default function Header() {
@@ -7,14 +8,14 @@ export default function Header() {
   const { settings } = shop;
 
   return (
-    <header className="sticky top-0 z-30 backdrop-blur-md bg-white/90 border-b shadow-sm" style={{ borderColor: 'var(--border-soft)' }}>
+    <header className="sticky top-0 z-30 backdrop-blur-md bg-white/85 border-b shadow-[0_6px_20px_-14px_rgba(0,0,0,0.25)]" style={{ borderColor: 'var(--border-soft)' }}>
       <div className="max-w-6xl mx-auto px-3 sm:px-6 py-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
           {settings.logoDataUrl ? (
             <img
-              src={settings.logoDataUrl}
+              src={ikImage(settings.logoDataUrl, 96)}
               alt="Logo"
-              className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl object-cover border shrink-0"
+              className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl object-cover border shrink-0 shadow-sm"
               style={{ borderColor: 'var(--border-soft)' }}
             />
           ) : (
@@ -37,7 +38,7 @@ export default function Header() {
           <button
             type="button"
             onClick={() => openTrack()}
-            className="px-2.5 sm:px-3 py-2 rounded-xl text-xs font-bold border bg-white hover:bg-stone-50 text-stone-800 transition flex items-center gap-1"
+            className="px-2.5 sm:px-3 py-2 rounded-xl text-xs font-bold border bg-white hover:bg-stone-50 hover:-translate-y-px active:scale-95 text-stone-800 transition flex items-center gap-1"
             style={{ borderColor: 'var(--border-soft)' }}
           >
             <span>📦</span>
@@ -46,7 +47,7 @@ export default function Header() {
           <button
             type="button"
             onClick={() => setLoyaltyOpen(true)}
-            className="px-2.5 sm:px-3 py-2 rounded-xl text-xs font-bold border bg-white hover:bg-stone-50 text-stone-800 transition flex items-center gap-1"
+            className="px-2.5 sm:px-3 py-2 rounded-xl text-xs font-bold border bg-white hover:bg-stone-50 hover:-translate-y-px active:scale-95 text-stone-800 transition flex items-center gap-1"
             style={{ borderColor: 'var(--border-soft)' }}
           >
             <span>🎁</span>
@@ -55,7 +56,7 @@ export default function Header() {
           <button
             type="button"
             onClick={() => setCartOpen(true)}
-            className="px-2.5 sm:px-3.5 py-2 rounded-xl text-xs font-bold text-white shadow-sm hover:opacity-95 transition flex items-center gap-1"
+            className="px-2.5 sm:px-3.5 py-2 rounded-xl text-xs font-bold text-white shadow-sm hover:brightness-110 hover:-translate-y-px active:scale-95 transition flex items-center gap-1"
             style={{ backgroundColor: 'var(--accent-main)' }}
           >
             <span>🛒</span>
@@ -64,7 +65,7 @@ export default function Header() {
           <button
             type="button"
             onClick={() => setAdminOpen(true)}
-            className="px-2.5 sm:px-3 py-2 rounded-xl text-xs font-bold bg-stone-800 text-white hover:bg-stone-700 transition flex items-center gap-1"
+            className="px-2.5 sm:px-3 py-2 rounded-xl text-xs font-bold bg-stone-800 text-white hover:bg-stone-700 hover:-translate-y-px active:scale-95 transition flex items-center gap-1"
           >
             <span>⚙️</span>
             <span className="hidden sm:inline">Quản lý</span>

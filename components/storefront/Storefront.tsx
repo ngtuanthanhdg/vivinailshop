@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { ORDER_CATEGORY, PLACEHOLDER_IMG } from '@/lib/constants';
 import { formatVND } from '@/lib/format';
+import { ikImage } from '@/lib/image';
 import { isOrderProduct } from '@/lib/shop';
 import type { Product } from '@/lib/types';
 import { useShop } from '../ShopProvider';
@@ -71,7 +72,7 @@ export default function Storefront() {
   }
 
   const selectClass =
-    'py-2.5 rounded-2xl border bg-white/95 text-stone-800 text-xs sm:text-sm font-bold focus:outline-none shadow-xs';
+    'py-2.5 rounded-2xl border bg-white/95 text-stone-800 text-xs sm:text-sm font-bold shadow-xs transition';
 
   return (
     <main className="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 pt-4 space-y-6">
@@ -101,15 +102,17 @@ export default function Storefront() {
               <div
                 key={p.id}
                 onClick={() => openDetail(p.id)}
-                className="bg-white rounded-2xl p-2 border shadow-xs hover:shadow-md transition cursor-pointer flex flex-col"
+                className="bg-white rounded-2xl p-2 border shadow-xs hover:shadow-md hover:-translate-y-0.5 transition duration-300 cursor-pointer flex flex-col group"
               >
                 <div className="relative aspect-square rounded-xl overflow-hidden bg-stone-100 mb-2">
                   <img
-                    src={p.images?.[0] || 'https://placehold.co/300x300/FAF5EF/7C583A?text=Order'}
+                    src={ikImage(p.images?.[0], 400) || 'https://placehold.co/300x300/FAF5EF/7C583A?text=Order'}
                     alt={p.name}
-                    className="w-full h-full object-cover"
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                   />
-                  <span className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500 text-white">
+                  <span className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/95 text-white shadow-sm">
                     ORDER
                   </span>
                 </div>
@@ -135,7 +138,7 @@ export default function Storefront() {
                 setPage(1);
               }}
               placeholder="🔍 Tìm tên sơn gel, charm, máy hơ, dụng cụ nail..."
-              className="w-full pl-4 pr-4 py-2.5 rounded-2xl border bg-white/95 text-stone-800 text-xs sm:text-sm focus:outline-none shadow-xs"
+              className="w-full pl-4 pr-4 py-2.5 rounded-2xl border bg-white/95 text-stone-800 text-xs sm:text-sm shadow-xs transition"
               style={{ borderColor: 'var(--border-soft)' }}
             />
           </div>
@@ -180,7 +183,7 @@ export default function Storefront() {
                 key={cat}
                 type="button"
                 onClick={() => selectCategory(cat)}
-                className={`px-3.5 py-2 rounded-2xl text-xs font-bold shrink-0 border transition ${
+                className={`px-3.5 py-2 rounded-2xl text-xs font-bold shrink-0 border transition duration-200 active:scale-95 ${
                   active ? 'text-white shadow-sm' : 'bg-white/90 text-stone-800 hover:bg-white'
                 }`}
                 style={
@@ -263,16 +266,17 @@ function ProductCard({ product: p, onOpen, onQuickAdd }: { product: Product; onO
   return (
     <div
       onClick={onOpen}
-      className="bg-white rounded-3xl p-2.5 sm:p-3 border shadow-xs hover:shadow-lg transition cursor-pointer flex flex-col justify-between group"
+      className="bg-white rounded-3xl p-2.5 sm:p-3 border shadow-xs hover:shadow-[0_14px_32px_-16px_rgba(0,0,0,0.28)] hover:-translate-y-1 transition duration-300 cursor-pointer flex flex-col justify-between group"
       style={{ borderColor: 'var(--border-soft)' }}
     >
       <div>
         <div className="relative aspect-square rounded-2xl overflow-hidden bg-stone-100 mb-2.5">
           <img
-            src={p.images?.[0] || PLACEHOLDER_IMG}
+            src={ikImage(p.images?.[0], 400) || PLACEHOLDER_IMG}
             alt={p.name}
             loading="lazy"
-            className={`w-full h-full object-cover group-hover:scale-105 transition duration-300 ${outOfStock ? 'opacity-50 grayscale' : ''}`}
+            decoding="async"
+            className={`w-full h-full object-cover group-hover:scale-105 transition duration-500 ${outOfStock ? 'opacity-50 grayscale' : ''}`}
           />
           {discountPct > 0 && (
             <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-600 text-white shadow">
@@ -290,7 +294,7 @@ function ProductCard({ product: p, onOpen, onQuickAdd }: { product: Product; onO
             </div>
           )}
         </div>
-        <div className="text-[10px] font-bold text-stone-400 uppercase">{p.category}</div>
+        <div className="text-[10px] font-bold text-stone-400 uppercase tracking-wide truncate">{p.category}</div>
         <h3 className="text-xs sm:text-sm font-bold text-stone-800 line-clamp-2 mt-0.5 leading-snug">{p.name}</h3>
       </div>
 
@@ -314,7 +318,7 @@ function ProductCard({ product: p, onOpen, onQuickAdd }: { product: Product; onO
               e.stopPropagation();
               onQuickAdd();
             }}
-            className="px-2.5 py-1 rounded-xl text-[11px] font-bold text-white shadow-xs hover:opacity-90"
+            className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-white shadow-xs hover:brightness-110 active:scale-95 transition"
             style={{ backgroundColor: 'var(--accent-main)' }}
           >
             {hasVariants ? 'Chọn loại' : '+ Giỏ hàng'}
