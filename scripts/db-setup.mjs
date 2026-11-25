@@ -1,7 +1,12 @@
 // Tạo các bảng trong database Neon từ file db/schema.sql.
 // Chạy: npm run db:setup   (đọc DATABASE_URL trong file .env.local)
+import './load-env.mjs';
 import { readFile } from 'node:fs/promises';
-import { Pool } from '@neondatabase/serverless';
+import { neonConfig, Pool } from '@neondatabase/serverless';
+import ws from 'ws';
+
+// Node 20 chưa có WebSocket sẵn → dùng thư viện ws.
+if (typeof globalThis.WebSocket === 'undefined') neonConfig.webSocketConstructor = ws;
 
 const url = process.env.DATABASE_URL;
 if (!url) {

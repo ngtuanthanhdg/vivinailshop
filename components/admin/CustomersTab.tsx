@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import { formatVND } from '@/lib/format';
-import { compressImageFile, IMAGE_ACCEPT, IMAGE_FORMATS_LABEL, imageErrorMessage } from '@/lib/image';
+import { IMAGE_ACCEPT, IMAGE_FORMATS_LABEL, imageErrorMessage, uploadImageFile } from '@/lib/image';
 import type { LoyaltyGift, ShopState } from '@/lib/types';
 import { useShop } from '../ShopProvider';
 
 export default function CustomersTab() {
-  const { adminState, saveSettings, openTrack, toast } = useShop();
+  const { admin, adminState, saveSettings, openTrack, toast } = useShop();
   const state = adminState as ShopState;
   const gifts = state.settings.loyaltyGifts || [];
 
@@ -35,8 +35,10 @@ export default function CustomersTab() {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
+    if (!admin) return;
+    toast('☁️ Đang tải ảnh quà lên...');
     try {
-      setGiftImage(await compressImageFile(file, 600, 0.78));
+      setGiftImage(await uploadImageFile(file, 'gift', admin.pin, `qua-${giftName || 'tang'}`));
       toast('📷 Đã tải ảnh quà tặng!');
     } catch (err) {
       toast(imageErrorMessage(err));

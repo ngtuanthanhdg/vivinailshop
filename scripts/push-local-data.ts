@@ -8,6 +8,7 @@
  * - Đơn hàng, khách hàng: chỉ THÊM những cái chưa có trong database (không xoá đơn thật đã phát sinh).
  * - Ảnh base64 và ảnh link ngoài (Unsplash…) được chép sang ImageKit, database chỉ lưu link ImageKit.
  */
+import './load-env.mjs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { DEFAULT_SETTINGS } from '@/lib/constants';

@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import { ORDER_CATEGORY } from '@/lib/constants';
 import { formatVND } from '@/lib/format';
-import { compressImageFile, IMAGE_ACCEPT, IMAGE_FORMATS_LABEL, ikImage, imageErrorMessage, isHttpImageUrl, MAX_IMAGE_MB } from '@/lib/image';
+import { IMAGE_ACCEPT, IMAGE_FORMATS_LABEL, ikImage, imageErrorMessage, isHttpImageUrl, MAX_IMAGE_MB, uploadImageFile, uploadImageFiles } from '@/lib/image';
 import { isOrderProduct } from '@/lib/shop';
 import type { Product, ShopState } from '@/lib/types';
 import { SYNC_LABELS, useShop } from '../ShopProvider';
@@ -83,6 +83,8 @@ export default function ProductsTab() {
   const [imageUrl, setImageUrl] = useState('');
   const [search, setSearch] = useState('');
   const [busy, setBusy] = useState(false);
+  /** Đang tải ảnh lên: { xong, tổng } — khoá nút Lưu để không lưu thiếu ảnh. */
+  const [uploading, setUploading] = useState<{ done: number; total: number } | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
 
   const formCategories = form.category && !categoryOptions.includes(form.category) ? [...categoryOptions, form.category] : categoryOptions;
@@ -105,21 +107,16 @@ export default function ProductsTab() {
     const files = Array.from(e.target.files || []);
     e.target.value = '';
     if (!files.length) return;
-    toast(`📷 Đang nén ${files.length} ảnh...`);
-    const compressed: string[] = [];
-    const errors: string[] = [];
-    for (const f of files) {
-      try {
-        // Lưu bản 1000px: ImageKit tự thu nhỏ khi hiển thị nên ảnh vẫn nhẹ mà phóng to vẫn nét.
-        compressed.push(await compressImageFile(f, 1000, 0.8));
-      } catch (err) {
-        errors.push(imageErrorMessage(err));
-      }
-    }
-    if (compressed.length) setForm((f) => ({ ...f, album: [...f.album, ...compressed] }));
-    if (!errors.length) toast(`✅ Đã thêm ${compressed.length} ảnh vào album!`);
-    else if (errors.length === 1 && !compressed.length) toast(errors[0]);
-    else toast(`${compressed.length ? `✅ Đã thêm ${compressed.length} ảnh • ` : ''}⚠️ Bỏ qua ${errors.length} ảnh không hợp lệ (chỉ nhận ${IMAGE_FORMATS_LABEL}, tối đa ${MAX_IMAGE_MB}MB)`);
+    if (!admin) return;
+    // Mỗi ảnh được nén (1600px) rồi tải thẳng lên ImageKit ngay; album chỉ giữ đường link.
+    setUploading({ done: 0, total: files.length });
+    toast(`☁️ Đang tải ${files.length} ảnh lên...`);
+    const { urls, errors } = await uploadImageFiles(files, 'product', admin.pin, (done, total) => setUploading({ done, total }));
+    setUploading(null);
+    if (urls.length) setForm((f) => ({ ...f, album: [...f.album, ...urls] }));
+    if (!errors.length) toast(`✅ Đã thêm ${urls.length} ảnh vào album!`);
+    else if (errors.length === 1 && !urls.length) toast(errors[0]);
+    else toast(`${urls.length ? `✅ Đã thêm ${urls.length} ảnh • ` : ''}⚠️ Bỏ qua ${errors.length} ảnh lỗi (chỉ nhận ${IMAGE_FORMATS_LABEL}, tối đa ${MAX_IMAGE_MB}MB)`);
   }
 
   function addImageUrl() {
@@ -159,15 +156,24 @@ export default function ProductsTab() {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
+    if (!admin) return;
+    setUploading({ done: 0, total: 1 });
+    toast('☁️ Đang tải ảnh phân loại lên...');
     try {
-      updateVariant(key, { image: await compressImageFile(file, 600, 0.78) });
+      updateVariant(key, { image: await uploadImageFile(file, 'variant', admin.pin) });
       toast('📷 Đã tải ảnh cho phân loại!');
     } catch (err) {
       toast(imageErrorMessage(err));
+    } finally {
+      setUploading(null);
     }
   }
 
   async function saveProduct() {
+    if (uploading) {
+      toast('⏳ Ảnh đang tải lên, đợi xong rồi lưu nhé!');
+      return;
+    }
     const price = Number(form.price || 0);
     if (!form.name.trim() || price <= 0) {
       toast('⚠️ Vui lòng nhập Tên sản phẩm và Giá bán lẻ hợp lệ!');
@@ -374,8 +380,8 @@ export default function ProductsTab() {
               </div>
               <div className="flex flex-wrap gap-2">
                 <label className="px-3 py-2 rounded-xl text-xs font-bold text-white cursor-pointer" style={{ backgroundColor: 'var(--accent-main)' }}>
-                  📷 Tải nhiều ảnh từ máy
-                  <input type="file" accept={IMAGE_ACCEPT} multiple onChange={handleAlbumUpload} className="hidden" />
+                  {uploading ? `⏳ Đang tải ${uploading.done}/${uploading.total}...` : '📷 Tải nhiều ảnh từ máy'}
+                  <input type="file" accept={IMAGE_ACCEPT} multiple disabled={Boolean(uploading)} onChange={handleAlbumUpload} className="hidden" />
                 </label>
                 <div className="flex flex-1 min-w-50 gap-1.5">
                   <input

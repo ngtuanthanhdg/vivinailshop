@@ -1,4 +1,8 @@
-import { neon, Pool, type NeonQueryFunction, type PoolClient } from '@neondatabase/serverless';
+import { neon, neonConfig, Pool, type NeonQueryFunction, type PoolClient } from '@neondatabase/serverless';
+import ws from 'ws';
+
+// Node 22+ có sẵn WebSocket; Node 20 thì chưa → dùng thư viện `ws` để transaction (Pool) vẫn chạy được.
+if (typeof globalThis.WebSocket === 'undefined') neonConfig.webSocketConstructor = ws;
 
 /**
  * Kết nối Neon (PostgreSQL).

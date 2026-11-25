@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { HANOI_DISTRICTS } from '@/lib/constants';
-import { compressImageFile, IMAGE_ACCEPT, IMAGE_FORMATS_LABEL, imageErrorMessage } from '@/lib/image';
+import { IMAGE_ACCEPT, IMAGE_FORMATS_LABEL, imageErrorMessage, uploadImageFile } from '@/lib/image';
 import type { ShopState } from '@/lib/types';
 import { useShop } from '../ShopProvider';
 
@@ -13,7 +13,7 @@ function firstWard(district: string): string {
 }
 
 export default function BrandingTab() {
-  const { adminState, saveSettings, adminRequest, toast } = useShop();
+  const { admin, adminState, saveSettings, adminRequest, toast } = useShop();
   const settings = (adminState as ShopState).settings;
 
   const [shopName, setShopName] = useState(settings.shopName);
@@ -37,9 +37,11 @@ export default function BrandingTab() {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
+    if (!admin) return;
     let logoDataUrl: string;
+    toast('☁️ Đang tải logo lên...');
     try {
-      logoDataUrl = await compressImageFile(file, 400, 0.85);
+      logoDataUrl = await uploadImageFile(file, 'logo', admin.pin, 'logo');
     } catch (err) {
       toast(imageErrorMessage(err));
       return;

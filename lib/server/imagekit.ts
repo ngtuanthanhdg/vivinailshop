@@ -50,6 +50,29 @@ function hasImageSignature(b: Buffer, mime: string): boolean {
   return b.length > 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff; // JPEG
 }
 
+/** Dung lượng tối đa của 1 ảnh (sau khi trình duyệt đã nén) mà máy chủ nhận. */
+export const MAX_STORED_IMAGE_MB = 20;
+
+/** Đoán định dạng từ "chữ ký" đầu file. Trả `null` nếu không phải JPG/PNG/WebP. */
+export function sniffImageMime(b: Buffer): string | null {
+  for (const mime of ['image/jpeg', 'image/png', 'image/webp']) if (hasImageSignature(b, mime)) return mime;
+  return null;
+}
+
+/**
+ * Lưu 1 ảnh (dạng byte) lên ImageKit, trả về URL.
+ * Chưa cấu hình ImageKit → trả về ảnh dạng base64 để vẫn chạy thử được.
+ */
+export async function uploadImageBytes(bytes: Buffer, name: string, subfolder = ''): Promise<string> {
+  if (bytes.length > MAX_STORED_IMAGE_MB * 1024 * 1024) {
+    throw new HttpError(413, `⚠️ Ảnh quá lớn (tối đa ${MAX_STORED_IMAGE_MB}MB sau khi nén)!`);
+  }
+  const mime = sniffImageMime(bytes);
+  if (!mime) throw new HttpError(415, '⚠️ File ảnh không hợp lệ (chỉ nhận JPG, PNG, WebP)!');
+  if (!imagekitEnabled()) return `data:${mime};base64,${bytes.toString('base64')}`;
+  return postToImageKit(new Blob([new Uint8Array(bytes)], { type: mime }), `${safeFileName(name)}.${EXT_BY_MIME[mime]}`, subfolder);
+}
+
 /** Tải 1 ảnh base64 (data:image/...;base64,...) lên ImageKit, trả về URL công khai. */
 export async function uploadDataUrl(dataUrl: string, name: string, subfolder = ''): Promise<string> {
   const match = /^data:(image\/[a-z0-9.+-]+);base64,([\s\S]+)$/i.exec(dataUrl);
@@ -58,11 +81,13 @@ export async function uploadDataUrl(dataUrl: string, name: string, subfolder = '
   const ext = EXT_BY_MIME[mime];
   if (!ext) throw new HttpError(415, '⚠️ Định dạng ảnh không được hỗ trợ (chỉ nhận JPG, PNG, WebP)!');
   const bytes = Buffer.from(match[2], 'base64');
-  if (bytes.length > 10 * 1024 * 1024) throw new HttpError(413, '⚠️ Ảnh quá lớn (tối đa 10MB sau khi nén)!');
+  if (bytes.length > MAX_STORED_IMAGE_MB * 1024 * 1024) {
+    throw new HttpError(413, `⚠️ Ảnh quá lớn (tối đa ${MAX_STORED_IMAGE_MB}MB sau khi nén)!`);
+  }
   if (!hasImageSignature(bytes, mime)) throw new HttpError(415, '⚠️ File ảnh không hợp lệ hoặc bị lỗi!');
 
   const fileName = `${safeFileName(name)}.${ext}`;
-  return postToImageKit(new Blob([bytes], { type: mime }), fileName, subfolder);
+  return postToImageKit(new Blob([new Uint8Array(bytes)], { type: mime }), fileName, subfolder);
 }
 
 /** Ảnh đang nằm ở trang web khác (VD: Unsplash) → nhờ ImageKit tự tải về và lưu 1 bản. */
