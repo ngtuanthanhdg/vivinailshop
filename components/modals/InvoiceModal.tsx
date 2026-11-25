@@ -11,7 +11,7 @@ export default function InvoiceModal() {
 
   return (
     <ModalOverlay zIndex="z-50" dark>
-      <div className="bg-white text-stone-800 rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto p-5 shadow-2xl relative">
+      <div className="bg-white text-stone-800 rounded-3xl max-w-md w-full max-h-[90dvh] overflow-y-auto overscroll-contain p-5 shadow-2xl relative">
         <CloseButton onClick={closeInvoice} className="absolute top-3.5 right-3.5" />
         <div className="space-y-3 text-xs">
           <div className="text-center border-b pb-3">

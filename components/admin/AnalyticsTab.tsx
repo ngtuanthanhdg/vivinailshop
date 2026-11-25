@@ -5,6 +5,7 @@ import { CANCELLED_STATUS } from '@/lib/constants';
 import { formatDateKeyLabel, formatVND, getOrderDateKey } from '@/lib/format';
 import { cartItemImage } from '@/lib/shop';
 import type { ShopState } from '@/lib/types';
+import { ikImage } from '@/lib/image';
 import { useShop } from '../ShopProvider';
 
 interface DayRow {
@@ -94,17 +95,17 @@ export default function AnalyticsTab() {
           <h3 className="text-sm font-extrabold">📊 Thống Kê Doanh Thu Ngày & Đơn Theo Sản Phẩm</h3>
           <p className="text-[11px] opacity-75">Tự động tính từ các đơn hàng hợp lệ (không tính đơn &quot;Đã hủy&quot;)</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <input
             type="date"
             value={pickedDate}
             onChange={(e) => setPickedDate(e.target.value)}
-            className="px-2.5 py-1.5 rounded-xl border bg-white text-xs font-bold text-stone-800"
+            className="flex-1 sm:flex-none min-w-0 px-2.5 py-1.5 rounded-xl border bg-white text-xs font-bold text-stone-800"
           />
           <button
             type="button"
             onClick={() => setPickedDate('')}
-            className="px-2.5 py-1.5 rounded-xl border bg-white text-xs font-bold text-stone-700 hover:bg-stone-50"
+            className="px-2.5 py-1.5 rounded-xl border bg-white text-xs font-bold text-stone-700 hover:bg-stone-50 whitespace-nowrap shrink-0"
           >
             Tất cả ngày
           </button>
@@ -132,12 +133,12 @@ export default function AnalyticsTab() {
       </div>
 
       {/* Bảng doanh thu theo từng ngày */}
-      <div className="p-4 rounded-2xl bg-stone-50 border space-y-2.5">
-        <div className="flex items-center justify-between">
+      <div className="p-3 sm:p-4 rounded-2xl bg-stone-50 border space-y-2.5">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <h4 className="text-xs sm:text-sm font-extrabold text-stone-800">🗓️ Doanh Thu Theo Từng Ngày</h4>
           <span className="text-[11px] text-stone-500">Sắp xếp ngày mới nhất</span>
         </div>
-        <div className="space-y-2 max-h-60 overflow-y-auto">
+        <div className="space-y-2 sm:max-h-60 sm:overflow-y-auto sm:pr-1">
           {!stats.dayRows.length ? (
             <div className="text-center py-4 text-xs text-stone-400">Chưa có dữ liệu doanh thu ngày phù hợp.</div>
           ) : (
@@ -159,7 +160,7 @@ export default function AnalyticsTab() {
       </div>
 
       {/* Bảng số lượng đơn & số lượng bán theo từng sản phẩm */}
-      <div className="p-4 rounded-2xl bg-stone-50 border space-y-2.5">
+      <div className="p-3 sm:p-4 rounded-2xl bg-stone-50 border space-y-2.5">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <h4 className="text-xs sm:text-sm font-extrabold text-stone-800">📦 Số Lượng Đơn & Số Lượng Bán Theo Sản Phẩm</h4>
           <input
@@ -167,17 +168,17 @@ export default function AnalyticsTab() {
             value={prodKw}
             onChange={(e) => setProdKw(e.target.value)}
             placeholder="Lọc tên sản phẩm..."
-            className="px-3 py-1 rounded-xl border bg-white text-xs w-40 sm:w-48"
+            className="px-3 py-1.5 rounded-xl border bg-white text-xs w-full sm:w-48"
           />
         </div>
-        <div className="space-y-2 max-h-72 overflow-y-auto">
+        <div className="space-y-2 sm:max-h-72 sm:overflow-y-auto sm:pr-1">
           {!stats.prodRows.length ? (
             <div className="text-center py-4 text-xs text-stone-400">Chưa có dữ liệu đơn theo sản phẩm phù hợp.</div>
           ) : (
             stats.prodRows.map((r) => (
               <div key={r.productId} className="p-2.5 rounded-xl border bg-white flex items-center justify-between gap-2.5">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <img src={r.image} alt={r.name} className="w-10 h-10 rounded-xl object-cover border shrink-0" />
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <img src={ikImage(r.image, 120)} loading="lazy" alt={r.name} className="w-10 h-10 rounded-xl object-cover border shrink-0" />
                   <div className="min-w-0">
                     <div className="text-xs font-bold text-stone-900 truncate">{r.name}</div>
                     <div className="text-[11px] text-stone-500">

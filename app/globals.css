@@ -60,6 +60,13 @@ textarea:focus-visible {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-main) 18%, transparent);
 }
 
+/* iPhone (Safari) tự phóng to trang khi bấm vào ô nhập có chữ < 16px → trên điện thoại giữ 16px. */
+@media (max-width: 639.98px) {
+  :is(input, select, textarea):is(.text-xs, .text-sm, .text-\[11px\], .text-\[10px\]) {
+    font-size: 16px;
+  }
+}
+
 /* Thanh cuộn mảnh, cùng tông màu shop */
 * {
   scrollbar-width: thin;

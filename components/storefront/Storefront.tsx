@@ -82,8 +82,8 @@ export default function Storefront() {
           className="rounded-3xl p-4 sm:p-5 border shadow-sm"
           style={{ backgroundColor: 'var(--bg-soft)', borderColor: 'var(--border-soft)' }}
         >
-          <div className="flex items-center justify-between mb-3 gap-2">
-            <div>
+          <div className="flex items-start sm:items-center justify-between mb-3 gap-2">
+            <div className="min-w-0">
               <h2 className="text-sm sm:text-base font-extrabold flex items-center gap-1.5">
                 <span>✈️ Mẫu Hàng Order Nội Địa Trung / Hàn</span>
               </h2>
@@ -92,9 +92,10 @@ export default function Storefront() {
             <button
               type="button"
               onClick={() => selectCategory(ORDER_CATEGORY)}
-              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-white/90 text-stone-800 border shadow-xs hover:bg-white shrink-0"
+              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-white/90 text-stone-800 border shadow-xs hover:bg-white shrink-0 whitespace-nowrap"
             >
-              Xem tất cả Order →
+              <span className="hidden sm:inline">Xem tất cả Order →</span>
+              <span className="sm:hidden">Xem tất cả →</span>
             </button>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 sm:gap-3">
@@ -198,7 +199,7 @@ export default function Storefront() {
           })}
         </div>
 
-        <div className="flex items-center justify-between text-xs opacity-80 px-1">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 text-[11px] sm:text-xs opacity-80 px-1">
           <span>
             Hiển thị {pageItems.length} / {list.length} sản phẩm (Trang {currentPage}/{totalPages})
           </span>

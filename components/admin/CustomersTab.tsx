@@ -147,16 +147,16 @@ export default function CustomersTab() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Tìm theo SĐT hoặc Tên..."
-            className="px-3 py-1.5 rounded-xl border text-xs w-48"
+            className="px-3 py-1.5 rounded-xl border text-xs w-full sm:w-48"
           />
         </div>
-        <div className="space-y-2 max-h-72 overflow-y-auto">
+        <div className="space-y-2 sm:max-h-80 sm:overflow-y-auto sm:pr-1">
           {!customers.length ? (
             <div className="text-center py-6 text-xs text-stone-400">Chưa có dữ liệu khách hàng phù hợp.</div>
           ) : (
             customers.map((c) => (
               <div key={c.phone} className="p-3 rounded-2xl border bg-white flex items-center justify-between gap-2">
-                <div>
+                <div className="min-w-0 break-words">
                   <div className="text-xs font-extrabold text-stone-800">
                     {c.name} — <span className="text-amber-800">{c.phone}</span>
                   </div>

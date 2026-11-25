@@ -27,7 +27,7 @@ export default function AdminModal() {
 
   return (
     <ModalOverlay dark padding="p-2 sm:p-4">
-      <div className="bg-white text-stone-800 rounded-3xl max-w-4xl w-full max-h-[92vh] overflow-y-auto p-4 sm:p-6 shadow-2xl relative">
+      <div className="bg-white text-stone-800 rounded-3xl max-w-4xl w-full max-h-[94dvh] overflow-y-auto overscroll-contain p-3.5 sm:p-6 shadow-2xl relative">
         <CloseButton onClick={() => setAdminOpen(false)} className="absolute top-3.5 right-3.5" />
         {admin && adminState ? <Dashboard /> : <LoginBox />}
       </div>
@@ -86,36 +86,41 @@ function Dashboard() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2 border-b pb-3 pr-8">
+      <div className="flex items-center flex-wrap gap-x-2 gap-y-1.5 border-b pb-3 pr-10">
+        <h2 className="text-[15px] sm:text-lg font-extrabold whitespace-nowrap">⚙️ Quản Trị Cửa Hàng</h2>
         <div className="flex items-center gap-2">
-          <h2 className="text-base sm:text-lg font-extrabold">⚙️ Quản Trị Cửa Hàng</h2>
-          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900">
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 whitespace-nowrap">
             {isOwner ? '👑 Chủ Shop' : '🧑‍💼 Nhân Viên'}
           </span>
-        </div>
-        <button
+          <button
           type="button"
           onClick={() => {
             logoutAdmin();
             setAdminOpen(false);
             toast('Đã đăng xuất quản lý.');
           }}
-          className="px-3 py-1 rounded-xl text-xs font-bold bg-stone-100 hover:bg-stone-200"
-        >
-          Đăng xuất
-        </button>
+          className="px-3 py-1 rounded-xl text-xs font-bold bg-stone-100 hover:bg-stone-200 whitespace-nowrap"
+          >
+            Đăng xuất
+          </button>
+        </div>
       </div>
 
       {/* Thanh Tab Quản lý */}
-      <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
+      <div className="sticky -top-3.5 sm:-top-6 z-10 -mx-3.5 sm:-mx-6 px-3.5 sm:px-6 py-2 bg-white/95 backdrop-blur flex gap-1.5 overflow-x-auto no-scrollbar">
         {visibleTabs.map((t) => {
           const active = tab === t.id;
           return (
             <button
               key={t.id}
               type="button"
-              onClick={() => setTab(t.id)}
-              className={`px-3 py-2 rounded-xl text-xs font-bold border shrink-0 ${active ? 'text-white' : ''}`}
+              onClick={(e) => {
+                setTab(t.id);
+                // Cuộn thanh tab để tab vừa chọn luôn nằm trong tầm nhìn (điện thoại)
+                const btn = e.currentTarget;
+                btn.parentElement?.scrollTo({ left: btn.offsetLeft - 16, behavior: 'smooth' });
+              }}
+              className={`px-3 py-2 rounded-xl text-xs font-bold border shrink-0 whitespace-nowrap transition ${active ? 'text-white shadow-sm' : 'bg-white hover:bg-stone-50'}`}
               style={active ? { backgroundColor: 'var(--accent-main)' } : undefined}
             >
               {t.label}

@@ -38,7 +38,7 @@ export default function LoyaltyModal() {
 
   return (
     <ModalOverlay hidden={!loyaltyOpen}>
-      <div className="bg-white text-stone-800 rounded-3xl max-w-xl w-full max-h-[88vh] overflow-y-auto p-4 sm:p-6 shadow-2xl space-y-4">
+      <div className="bg-white text-stone-800 rounded-3xl max-w-xl w-full max-h-[88dvh] overflow-y-auto overscroll-contain p-4 sm:p-6 shadow-2xl space-y-4">
         <div className="flex items-center justify-between border-b pb-3">
           <h2 className="text-base sm:text-lg font-extrabold">🎁 Tích Điểm Đổi Quà Thành Viên</h2>
           <CloseButton onClick={() => setLoyaltyOpen(false)} />

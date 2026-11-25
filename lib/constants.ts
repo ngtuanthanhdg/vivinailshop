@@ -122,7 +122,7 @@ export const DEFAULT_SETTINGS: Settings = {
   shopName: 'ViVi NailShop',
   tagline: 'Phụ kiện nail • Sơn gel • Máy hơ • Order nội địa',
   announcement: '✨ ViVi NailShop — Chuyên sỉ & lẻ phụ kiện, sơn gel, máy hơ & nhận Order hàng nội địa Trung/Hàn ✨',
-  zaloPhone: '0987654321',
+  zaloPhone: '0967441757',
   shopDistrict: 'Đống Đa',
   shopWard: 'Ô Chợ Dừa',
   logoDataUrl: '',

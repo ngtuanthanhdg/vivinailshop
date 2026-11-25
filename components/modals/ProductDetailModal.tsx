@@ -68,13 +68,13 @@ function DetailContent({ product: p }: { product: Product }) {
     }
     const varName = variantIdx >= 0 && p.variants[variantIdx] ? p.variants[variantIdx].name : 'Mặc định';
     const msg = `Chào shop ${shop.settings.shopName}, mình muốn đặt:\n- SP: ${p.name}\n- Phân loại: ${varName}\n- SL: ${qty} x ${formatVND(unitPrice)} = ${formatVND(unitPrice * qty)}`;
-    const zaloNum = (shop.settings.zaloPhone || '0987654321').replace(/\D/g, '');
+    const zaloNum = (shop.settings.zaloPhone || '0967441757').replace(/\D/g, '');
     window.open(`https://zalo.me/${zaloNum}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
   }
 
   return (
     <ModalOverlay>
-      <div className="bg-white text-stone-800 rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 shadow-2xl relative">
+      <div className="bg-white text-stone-800 rounded-3xl max-w-3xl w-full max-h-[90dvh] overflow-y-auto overscroll-contain p-4 sm:p-6 shadow-2xl relative">
         <CloseButton onClick={closeDetail} className="absolute top-3.5 right-3.5" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="space-y-2.5">

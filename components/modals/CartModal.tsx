@@ -127,13 +127,13 @@ export default function CartModal() {
 
   return (
     <ModalOverlay hidden={!cartOpen}>
-      <div className="bg-white text-stone-800 rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-y-auto p-4 sm:p-6 shadow-2xl relative space-y-4">
+      <div className="bg-white text-stone-800 rounded-3xl max-w-2xl w-full max-h-[92dvh] overflow-y-auto overscroll-contain p-4 sm:p-6 shadow-2xl relative space-y-4">
         <div className="flex items-center justify-between border-b pb-3">
           <h2 className="text-base sm:text-lg font-extrabold flex items-center gap-2">🛒 Giỏ Hàng & Thanh Toán</h2>
           <CloseButton onClick={() => setCartOpen(false)} />
         </div>
 
-        <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+        <div className="space-y-2.5 sm:max-h-60 sm:overflow-y-auto sm:pr-1">
           {!cart.length ? (
             <div className="py-8 text-center text-xs text-stone-400">Giỏ hàng của bạn đang trống. Hãy chọn thêm sản phẩm nhé!</div>
           ) : (
@@ -145,7 +145,7 @@ export default function CartModal() {
                   className="w-12 h-12 rounded-xl object-cover border shrink-0"
                 />
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-bold text-stone-800 truncate">{item.name}</div>
+                  <div className="text-xs font-bold text-stone-800 leading-snug line-clamp-2 break-words">{item.name}</div>
                   {item.variantName && (
                     <div className="text-[11px] text-stone-500">
                       Phân loại: <b>{item.variantName}</b>
@@ -156,11 +156,11 @@ export default function CartModal() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <button type="button" onClick={() => updateCartQty(idx, -1)} className="w-7 h-7 rounded-lg border bg-white font-bold text-xs">
+                  <button type="button" onClick={() => updateCartQty(idx, -1)} className="w-8 h-8 rounded-lg border bg-white font-bold text-sm active:scale-90 transition">
                     −
                   </button>
                   <span className="w-6 text-center text-xs font-extrabold">{item.qty}</span>
-                  <button type="button" onClick={() => updateCartQty(idx, 1)} className="w-7 h-7 rounded-lg border bg-white font-bold text-xs">
+                  <button type="button" onClick={() => updateCartQty(idx, 1)} className="w-8 h-8 rounded-lg border bg-white font-bold text-sm active:scale-90 transition">
                     +
                   </button>
                 </div>
@@ -205,7 +205,7 @@ export default function CartModal() {
                     key={opt.id}
                     type="button"
                     onClick={() => setMethod(opt.id)}
-                    className={`py-2 px-2 rounded-xl border text-[11px] sm:text-xs font-bold ${active ? 'text-white' : 'bg-white text-stone-800'}`}
+                    className={`py-2 px-1.5 rounded-xl border text-[11px] sm:text-xs font-bold leading-tight transition active:scale-95 ${active ? 'text-white shadow-sm' : 'bg-white text-stone-800'}`}
                     style={active ? { backgroundColor: 'var(--accent-main)' } : undefined}
                   >
                     {opt.label}
@@ -218,7 +218,7 @@ export default function CartModal() {
           {/* Tính cước Grab Hà Nội theo Quận/Phường */}
           {method === 'grab' && (
             <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-2">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-2">
                 <select
                   value={district}
                   onChange={(e) => {

@@ -280,17 +280,17 @@ export default function ProductsTab() {
             {syncStatus === 'online' ? '☁️ Dữ liệu lưu trên máy chủ • Tự đồng bộ mọi thiết bị' : SYNC_LABELS[syncStatus]}
           </span>
           <div className="flex flex-wrap gap-1.5">
-            <button type="button" onClick={syncNow} className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-white" style={{ backgroundColor: 'var(--accent-main)' }}>
+            <button type="button" onClick={syncNow} className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-white" style={{ backgroundColor: 'var(--accent-main)' }}>
               ☁️ Đồng bộ ngay
             </button>
-            <button type="button" onClick={migrateImages} className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white border">
+            <button type="button" onClick={migrateImages} className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-white border">
               ☁️ Đưa ảnh lên ImageKit
             </button>
-            <button type="button" onClick={exportBackup} className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white border">
+            <button type="button" onClick={exportBackup} className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-white border">
               ⬇️ Sao lưu JSON
             </button>
             {isOwner && (
-              <label className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white border cursor-pointer">
+              <label className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-white border cursor-pointer">
                 ⬆️ Khôi phục
                 <input type="file" accept=".json,application/json" onChange={importBackup} className="hidden" />
               </label>
@@ -303,19 +303,19 @@ export default function ProductsTab() {
       <div ref={formRef} className="rounded-2xl bg-stone-50 border overflow-hidden scroll-mt-4">
         <div
           onClick={() => setExpanded((x) => !x)}
-          className="p-3.5 sm:p-4 flex items-center justify-between cursor-pointer hover:bg-stone-100/80 transition select-none"
+          className="p-3 sm:p-4 flex items-center justify-between gap-2 cursor-pointer hover:bg-stone-100/80 transition select-none"
         >
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-extrabold text-stone-800">{form.editId ? `✏️ Sửa Sản Phẩm #${form.editId}` : '➕ Thêm Sản Phẩm Mới'}</h3>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Ấn để mở / thu gọn</span>
+          <div className="flex items-center gap-2 min-w-0">
+            <h3 className="text-sm font-extrabold text-stone-800 truncate">{form.editId ? `✏️ Sửa Sản Phẩm #${form.editId}` : '➕ Thêm Sản Phẩm Mới'}</h3>
+            <span className="hidden sm:inline px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 whitespace-nowrap">Ấn để mở / thu gọn</span>
           </div>
-          <button type="button" className="px-3 py-1.5 rounded-xl text-xs font-bold text-white shadow-xs" style={{ backgroundColor: 'var(--accent-main)' }}>
+          <button type="button" className="px-3 py-1.5 rounded-xl text-xs font-bold text-white shadow-xs whitespace-nowrap shrink-0" style={{ backgroundColor: 'var(--accent-main)' }}>
             {expanded ? '▲ Thu gọn' : '▼ Mở form'}
           </button>
         </div>
 
         {expanded && (
-          <div className="p-4 pt-2 border-t space-y-3">
+          <div className="p-3 sm:p-4 pt-2 border-t space-y-3">
             <div className="flex justify-end">
               <button type="button" onClick={resetForm} className="text-xs underline text-stone-500">
                 Làm mới form
@@ -334,10 +334,10 @@ export default function ProductsTab() {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              <input type="number" min={0} value={form.price} onChange={(e) => update({ price: e.target.value })} placeholder="Giá bán lẻ (đ) *" className={inputClass} />
-              <input type="number" min={0} value={form.oldPrice} onChange={(e) => update({ oldPrice: e.target.value })} placeholder="Giá gốc gạch (đ)" className={inputClass} />
-              <input type="number" min={0} value={form.combo5} onChange={(e) => update({ combo5: e.target.value })} placeholder="Giá combo từ 5 SP" className={inputClass} />
-              <input type="number" min={0} value={form.combo10} onChange={(e) => update({ combo10: e.target.value })} placeholder="Giá combo từ 10 SP" className={inputClass} />
+              <input type="number" min={0} value={form.price} onChange={(e) => update({ price: e.target.value })} placeholder="Giá bán (đ) *" className={inputClass} />
+              <input type="number" min={0} value={form.oldPrice} onChange={(e) => update({ oldPrice: e.target.value })} placeholder="Giá gốc gạch" className={inputClass} />
+              <input type="number" min={0} value={form.combo5} onChange={(e) => update({ combo5: e.target.value })} placeholder="Combo 5+ SP (đ)" className={inputClass} />
+              <input type="number" min={0} value={form.combo10} onChange={(e) => update({ combo10: e.target.value })} placeholder="Combo 10+ SP (đ)" className={inputClass} />
             </div>
 
             <div className="flex flex-wrap gap-4 text-xs font-bold">
@@ -359,7 +359,7 @@ export default function ProductsTab() {
                   📷 Tải nhiều ảnh từ máy
                   <input type="file" accept="image/*" multiple onChange={handleAlbumUpload} className="hidden" />
                 </label>
-                <div className="flex flex-1 min-w-[200px] gap-1.5">
+                <div className="flex flex-1 min-w-50 gap-1.5">
                   <input
                     type="text"
                     value={imageUrl}
@@ -368,14 +368,14 @@ export default function ProductsTab() {
                       if (e.key === 'Enter') addImageUrl();
                     }}
                     placeholder="Hoặc dán link ảnh URL..."
-                    className="flex-1 px-3 py-1.5 rounded-xl border bg-white text-xs"
+                    className="flex-1 min-w-0 px-3 py-1.5 rounded-xl border bg-white text-xs"
                   />
                   <button type="button" onClick={addImageUrl} className="px-3 py-1.5 rounded-xl text-xs font-bold bg-stone-800 text-white">
                     + Link
                   </button>
                 </div>
               </div>
-              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+              <div className="grid grid-cols-3 min-[420px]:grid-cols-4 sm:grid-cols-6 gap-2">
                 {!form.album.length ? (
                   <div className="col-span-full text-[11px] text-stone-400 py-2">Chưa có ảnh nào trong album. Hãy tải ảnh lên hoặc thêm link ảnh.</div>
                 ) : (
@@ -402,12 +402,12 @@ export default function ProductsTab() {
 
             {/* Phân loại sản phẩm kèm giá & ảnh riêng */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-bold text-stone-700">🎨 Phân loại (Màu sắc / Size / Giá PL & Ảnh riêng):</span>
                 <button
                   type="button"
                   onClick={() => setForm((f) => ({ ...f, variants: [...f.variants, { key: nextRowKey(), name: '', price: '', image: '' }] }))}
-                  className="px-2.5 py-1 rounded-lg text-xs font-bold bg-stone-800 text-white"
+                  className="px-2.5 py-1 rounded-lg text-xs font-bold bg-stone-800 text-white whitespace-nowrap shrink-0"
                 >
                   + Thêm phân loại
                 </button>
@@ -420,7 +420,7 @@ export default function ProductsTab() {
                       value={v.name}
                       onChange={(e) => updateVariant(v.key, { name: e.target.value })}
                       placeholder="Tên phân loại (VD: Đỏ Cherry / Size M)"
-                      className="flex-1 min-w-[130px] px-2.5 py-1.5 rounded-lg border text-xs"
+                      className="flex-1 min-w-32.5 px-2.5 py-1.5 rounded-lg border text-xs"
                     />
                     <input
                       type="number"
@@ -435,7 +435,7 @@ export default function ProductsTab() {
                       value={v.image}
                       onChange={(e) => updateVariant(v.key, { image: e.target.value })}
                       placeholder="Link/Data ảnh PL..."
-                      className="flex-1 min-w-[110px] px-2.5 py-1.5 rounded-lg border text-xs"
+                      className="flex-1 min-w-27.5 px-2.5 py-1.5 rounded-lg border text-xs"
                     />
                     <label className="px-2 py-1.5 rounded-lg border bg-stone-50 hover:bg-stone-100 text-[11px] font-bold cursor-pointer shrink-0">
                       📷
@@ -478,11 +478,11 @@ export default function ProductsTab() {
       <div className="space-y-2.5">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <h3 className="text-sm font-extrabold">📦 Danh Sách Sản Phẩm Hiện Có</h3>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
               type="button"
               onClick={recalcSold}
-              className="px-2.5 py-1.5 rounded-xl border bg-amber-50 text-amber-900 text-[11px] font-bold hover:bg-amber-100"
+              className="px-2.5 py-1.5 rounded-xl border bg-amber-50 text-amber-900 text-[11px] font-bold hover:bg-amber-100 whitespace-nowrap shrink-0"
             >
               🔄 Tính lại số đã bán
             </button>
@@ -491,27 +491,29 @@ export default function ProductsTab() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm nhanh SP..."
-              className="px-3 py-1.5 rounded-xl border text-xs w-44"
+              className="px-3 py-1.5 rounded-xl border text-xs flex-1 min-w-0 sm:flex-none sm:w-44"
             />
           </div>
         </div>
-        <div className="space-y-2 max-h-80 overflow-y-auto">
+        <div className="space-y-2 sm:max-h-[28rem] sm:overflow-y-auto sm:pr-1">
           {!filtered.length ? (
             <div className="text-center py-6 text-xs text-stone-400">Không có sản phẩm nào phù hợp.</div>
           ) : (
             filtered.map((p) => {
               const isOut = p.inStock === false;
               return (
-                <div key={p.id} className="p-2.5 rounded-2xl border bg-white flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5">
-                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <div key={p.id} className="p-2.5 sm:p-3 rounded-2xl border bg-white flex flex-col sm:flex-row sm:items-center gap-2.5">
+                  {/* Ảnh + thông tin: luôn chiếm đủ chiều ngang trên điện thoại */}
+                  <div className="flex items-start sm:items-center gap-2.5 min-w-0 flex-1">
                     <img
                       src={ikImage(p.images?.[0], 120) || 'https://placehold.co/96x96/FAF5EF/7C583A?text=SP'}
                       alt={p.name}
-                      className={`w-12 h-12 rounded-xl object-cover border shrink-0 ${isOut ? 'opacity-50' : ''}`}
+                      loading="lazy"
+                      className={`w-14 h-14 sm:w-12 sm:h-12 rounded-xl object-cover border shrink-0 ${isOut ? 'opacity-50 grayscale' : ''}`}
                     />
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-xs font-extrabold text-stone-900 truncate">{p.name}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs sm:text-[13px] font-extrabold text-stone-900 leading-snug line-clamp-2 break-words">{p.name}</div>
+                      <div className="flex items-center gap-1 flex-wrap mt-1">
                         <span
                           className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isOut ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}
                         >
@@ -520,48 +522,55 @@ export default function ProductsTab() {
                         {isOrderProduct(p) && (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">ORDER</span>
                         )}
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-100 text-stone-600 truncate max-w-[10rem]">
+                          {p.category}
+                        </span>
                       </div>
-                      <div className="text-[11px] text-stone-500 mt-0.5">
-                        {p.category} • <b className="text-stone-800">{formatVND(p.price)}</b>
-                        {p.comboPrice5 > 0 && ` • 5+: ${formatVND(p.comboPrice5)}`}
-                        {p.comboPrice10 > 0 && ` • 10+: ${formatVND(p.comboPrice10)}`}
+                      <div className="flex items-baseline flex-wrap gap-x-2.5 gap-y-0.5 mt-1 text-[11px] text-stone-500">
+                        <b className="text-xs text-stone-900">{formatVND(p.price)}</b>
+                        {p.comboPrice5 > 0 && <span className="whitespace-nowrap">5+: {formatVND(p.comboPrice5)}</span>}
+                        {p.comboPrice10 > 0 && <span className="whitespace-nowrap">10+: {formatVND(p.comboPrice10)}</span>}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
-                    <label className="flex items-center gap-1 px-2 py-1 rounded-xl bg-stone-50 border text-[11px] font-bold text-stone-700">
-                      <span>Đã bán:</span>
+                  {/* Thanh thao tác: hàng riêng bên dưới trên điện thoại, nằm bên phải trên máy tính */}
+                  <div className="flex items-center gap-1.5 sm:shrink-0 border-t border-stone-100 pt-2 sm:border-0 sm:pt-0">
+                    <label className="mr-auto sm:mr-0 flex items-center gap-1 pl-2 pr-1 py-1 rounded-xl bg-stone-50 border text-[11px] font-bold text-stone-600 whitespace-nowrap">
+                      <span>Đã bán</span>
                       <input
                         key={`${p.id}-${p.sold}`}
                         type="number"
+                        inputMode="numeric"
                         min={0}
                         defaultValue={Number(p.sold || 0)}
                         onBlur={(e) => adjustSold(p, e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') e.currentTarget.blur();
                         }}
-                        className="w-14 px-1.5 py-0.5 rounded border bg-white text-xs font-extrabold text-center"
+                        className="w-14 px-1.5 py-0.5 rounded-lg border bg-white text-xs font-extrabold text-center"
                       />
                     </label>
                     <button
                       type="button"
                       onClick={() => toggleStock(p)}
-                      className="px-2.5 py-1.5 rounded-xl border text-[11px] font-bold bg-stone-50 hover:bg-stone-100"
+                      className={`px-2.5 py-1.5 rounded-xl border text-[11px] font-bold whitespace-nowrap transition active:scale-95 ${
+                        isOut ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100' : 'bg-stone-50 hover:bg-stone-100'
+                      }`}
                     >
                       {isOut ? 'Mở bán' : 'Hết hàng'}
                     </button>
                     <button
                       type="button"
                       onClick={() => editProduct(p)}
-                      className="px-2.5 py-1.5 rounded-xl bg-amber-100 text-amber-900 text-[11px] font-bold hover:bg-amber-200"
+                      className="px-3 py-1.5 rounded-xl bg-amber-100 text-amber-900 text-[11px] font-bold hover:bg-amber-200 transition active:scale-95"
                     >
                       Sửa
                     </button>
                     <button
                       type="button"
                       onClick={() => deleteProduct(p)}
-                      className="px-2.5 py-1.5 rounded-xl bg-rose-100 text-rose-700 text-[11px] font-bold hover:bg-rose-200"
+                      className="px-3 py-1.5 rounded-xl bg-rose-100 text-rose-700 text-[11px] font-bold hover:bg-rose-200 transition active:scale-95"
                     >
                       Xóa
                     </button>
