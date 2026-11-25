@@ -1,0 +1,584 @@
+'use client';
+
+import { useRef, useState } from 'react';
+import { ORDER_CATEGORY } from '@/lib/constants';
+import { formatVND } from '@/lib/format';
+import { compressDataUrlString, compressImageFile } from '@/lib/image';
+import { isOrderProduct } from '@/lib/shop';
+import type { Product, ShopState } from '@/lib/types';
+import { SYNC_LABELS, useShop } from '../ShopProvider';
+
+interface VariantRow {
+  key: number;
+  name: string;
+  price: string;
+  image: string;
+}
+
+interface ProductForm {
+  editId: string;
+  name: string;
+  category: string;
+  price: string;
+  oldPrice: string;
+  combo5: string;
+  combo10: string;
+  inStock: boolean;
+  isOrder: boolean;
+  description: string;
+  album: string[];
+  variants: VariantRow[];
+}
+
+let rowSeq = 0;
+const nextRowKey = () => ++rowSeq;
+
+function emptyForm(category: string): ProductForm {
+  return {
+    editId: '',
+    name: '',
+    category,
+    price: '',
+    oldPrice: '',
+    combo5: '',
+    combo10: '',
+    inStock: true,
+    isOrder: false,
+    description: '',
+    album: [],
+    variants: [],
+  };
+}
+
+function formFromProduct(p: Product): ProductForm {
+  const n = (v: number) => (v ? String(v) : '');
+  return {
+    editId: p.id,
+    name: p.name || '',
+    category: p.category,
+    price: n(p.price),
+    oldPrice: n(p.oldPrice),
+    combo5: n(p.comboPrice5),
+    combo10: n(p.comboPrice10),
+    inStock: p.inStock !== false,
+    isOrder: isOrderProduct(p),
+    description: p.description || '',
+    album: Array.isArray(p.images) ? [...p.images] : [],
+    variants: (p.variants || []).map((v) => ({ key: nextRowKey(), name: v.name, price: v.price ? String(v.price) : '', image: v.image || '' })),
+  };
+}
+
+const inputClass = 'px-3 py-2 rounded-xl border bg-white text-xs sm:text-sm';
+
+export default function ProductsTab() {
+  const { adminState, admin, syncStatus, adminRequest, refreshAll, toast } = useShop();
+  const state = adminState as ShopState;
+  const isOwner = admin?.role === 'owner';
+
+  const categoryOptions = state.categories.filter((c) => c !== 'Tất cả');
+  if (!categoryOptions.includes(ORDER_CATEGORY)) categoryOptions.push(ORDER_CATEGORY);
+
+  const [form, setForm] = useState<ProductForm>(() => emptyForm(categoryOptions[0] || 'Sơn Gel'));
+  const [expanded, setExpanded] = useState(false);
+  const [imageUrl, setImageUrl] = useState('');
+  const [search, setSearch] = useState('');
+  const [busy, setBusy] = useState(false);
+  const formRef = useRef<HTMLDivElement>(null);
+
+  const formCategories = form.category && !categoryOptions.includes(form.category) ? [...categoryOptions, form.category] : categoryOptions;
+  const update = (patch: Partial<ProductForm>) => setForm((f) => ({ ...f, ...patch }));
+
+  // ======================== FORM SẢN PHẨM ========================
+  function resetForm() {
+    setForm(emptyForm(categoryOptions[0] || 'Sơn Gel'));
+    setImageUrl('');
+  }
+
+  function editProduct(p: Product) {
+    setForm(formFromProduct(p));
+    setImageUrl('');
+    setExpanded(true);
+    requestAnimationFrame(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+  }
+
+  async function handleAlbumUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (!files.length) return;
+    toast(`📷 Đang nén ${files.length} ảnh...`);
+    const compressed: string[] = [];
+    for (const f of files) {
+      const img = await compressImageFile(f, 480, 0.68);
+      if (img) compressed.push(img);
+    }
+    setForm((f) => ({ ...f, album: [...f.album, ...compressed] }));
+    toast(`✅ Đã thêm ${compressed.length} ảnh vào album!`);
+  }
+
+  function addImageUrl() {
+    const url = imageUrl.trim();
+    if (!url) {
+      toast('⚠️ Vui lòng dán đường dẫn ảnh trước!');
+      return;
+    }
+    setForm((f) => ({ ...f, album: [...f.album, url] }));
+    setImageUrl('');
+    toast('🖼️ Đã thêm link ảnh vào album!');
+  }
+
+  function setCover(idx: number) {
+    if (idx <= 0) return;
+    setForm((f) => {
+      const album = [...f.album];
+      const [chosen] = album.splice(idx, 1);
+      return { ...f, album: [chosen, ...album] };
+    });
+    toast('★ Đã đặt làm ảnh bìa chính!');
+  }
+
+  function removeAlbumImage(idx: number) {
+    setForm((f) => ({ ...f, album: f.album.filter((_, i) => i !== idx) }));
+  }
+
+  function updateVariant(key: number, patch: Partial<VariantRow>) {
+    setForm((f) => ({ ...f, variants: f.variants.map((v) => (v.key === key ? { ...v, ...patch } : v)) }));
+  }
+
+  async function handleVariantImage(key: number, e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const img = await compressImageFile(file, 360, 0.66);
+    updateVariant(key, { image: img });
+    toast('📷 Đã tải ảnh cho phân loại!');
+  }
+
+  async function saveProduct() {
+    const price = Number(form.price || 0);
+    if (!form.name.trim() || price <= 0) {
+      toast('⚠️ Vui lòng nhập Tên sản phẩm và Giá bán lẻ hợp lệ!');
+      return;
+    }
+    setBusy(true);
+    const res = await adminRequest('POST', '/api/admin/products', {
+      product: {
+        id: form.editId,
+        name: form.name.trim(),
+        category: form.category || 'Sơn Gel',
+        price,
+        oldPrice: Number(form.oldPrice || 0),
+        comboPrice5: Number(form.combo5 || 0),
+        comboPrice10: Number(form.combo10 || 0),
+        inStock: form.inStock,
+        isOrder: form.isOrder,
+        description: form.description.trim(),
+        images: form.album,
+        variants: form.variants
+          .filter((v) => v.name.trim())
+          .map((v) => ({ name: v.name.trim(), price: Math.max(0, Number(v.price || 0)), image: v.image.trim() })),
+      },
+    });
+    setBusy(false);
+    if (res) {
+      toast(form.editId ? `✅ Đã cập nhật "${form.name.trim()}"!` : `🎉 Đã thêm mới "${form.name.trim()}"!`);
+      resetForm();
+    }
+  }
+
+  // ======================== DANH SÁCH SẢN PHẨM ========================
+  async function toggleStock(p: Product) {
+    const nextInStock = p.inStock === false;
+    const res = await adminRequest('PATCH', '/api/admin/products', { updates: [{ id: p.id, inStock: nextInStock }] });
+    if (res) toast(nextInStock ? `✅ "${p.name}" đã mở bán lại!` : `⏸️ "${p.name}" đã chuyển sang Tạm hết hàng!`);
+  }
+
+  async function deleteProduct(p: Product) {
+    if (!window.confirm(`Xóa sản phẩm "${p.name}"?`)) return;
+    const res = await adminRequest('DELETE', `/api/admin/products/${encodeURIComponent(p.id)}`);
+    if (res) {
+      toast(`🗑️ Đã xóa "${p.name}"!`);
+      if (form.editId === p.id) resetForm();
+    }
+  }
+
+  async function adjustSold(p: Product, value: string) {
+    const sold = Math.max(0, Math.floor(Number(value || 0)));
+    if (sold === Number(p.sold || 0)) return;
+    const res = await adminRequest('PATCH', '/api/admin/products', { updates: [{ id: p.id, sold }] });
+    if (res) toast(`📊 Đã cập nhật số đã bán của "${p.name}" = ${sold}`);
+  }
+
+  async function recalcSold() {
+    const res = await adminRequest('POST', '/api/admin/products/recalculate-sold');
+    if (res) toast('🔄 Đã tính lại toàn bộ số lượng đã bán từ danh sách đơn hàng!');
+  }
+
+  // ======================== ĐỒNG BỘ, NÉN ẢNH & SAO LƯU ========================
+  async function syncNow() {
+    toast('🔄 Đang tải dữ liệu mới nhất từ máy chủ...');
+    const ok = await refreshAll();
+    toast(ok ? '✅ Đã đồng bộ dữ liệu mới nhất!' : '⚠️ Chưa kết nối được máy chủ lúc này!');
+  }
+
+  async function optimizeImages() {
+    toast('⚡ Đang nén tối ưu toàn bộ ảnh...');
+    const updates = [];
+    for (const p of state.products) {
+      const images: string[] = [];
+      for (const img of p.images || []) images.push(await compressDataUrlString(img, 560, 0.72));
+      const variants = [];
+      for (const v of p.variants || []) variants.push({ ...v, image: v.image ? await compressDataUrlString(v.image, 420, 0.7) : '' });
+      updates.push({ id: p.id, images, variants });
+    }
+    if (!updates.length) return;
+    const res = await adminRequest('PATCH', '/api/admin/products', { updates });
+    if (res) toast('✅ Đã nén nhẹ toàn bộ ảnh & đồng bộ xong!');
+  }
+
+  function exportBackup() {
+    const payload = {
+      categories: state.categories,
+      products: state.products,
+      orders: state.orders,
+      customers: state.customers,
+      settings: state.settings,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ViViNailShop_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('⬇️ Đã tải file sao lưu dữ liệu JSON!');
+  }
+
+  async function importBackup(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(await file.text());
+    } catch {
+      toast('❌ File JSON không hợp lệ!');
+      return;
+    }
+    if (!parsed || typeof parsed !== 'object') {
+      toast('❌ File JSON không hợp lệ!');
+      return;
+    }
+    if (!window.confirm('Khôi phục sẽ thay thế dữ liệu hiện tại bằng dữ liệu trong file. Tiếp tục?')) return;
+    const res = await adminRequest('POST', '/api/admin/import', parsed);
+    if (res) toast('✅ Đã khôi phục & đồng bộ dữ liệu thành công!');
+  }
+
+  const kw = search.trim().toLowerCase();
+  const filtered = state.products.filter(
+    (p) => !kw || (p.name || '').toLowerCase().includes(kw) || (p.category || '').toLowerCase().includes(kw),
+  );
+
+  return (
+    <div className="space-y-4">
+      {/* Thanh trạng thái đồng bộ & sao lưu */}
+      <div className="rounded-2xl p-3 border space-y-2" style={{ backgroundColor: 'var(--bg-soft)', borderColor: 'var(--border-soft)' }}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-[11px] font-bold" style={{ color: 'var(--accent-main)' }}>
+            {syncStatus === 'online' ? '☁️ Dữ liệu lưu trên máy chủ • Tự đồng bộ mọi thiết bị' : SYNC_LABELS[syncStatus]}
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            <button type="button" onClick={syncNow} className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-white" style={{ backgroundColor: 'var(--accent-main)' }}>
+              ☁️ Đồng bộ ngay
+            </button>
+            <button type="button" onClick={optimizeImages} className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white border">
+              ⚡ Nén nhẹ ảnh
+            </button>
+            <button type="button" onClick={exportBackup} className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white border">
+              ⬇️ Sao lưu JSON
+            </button>
+            {isOwner && (
+              <label className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white border cursor-pointer">
+                ⬆️ Khôi phục
+                <input type="file" accept=".json,application/json" onChange={importBackup} className="hidden" />
+              </label>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Form Thêm / Sửa sản phẩm (Thu gọn mặc định) */}
+      <div ref={formRef} className="rounded-2xl bg-stone-50 border overflow-hidden scroll-mt-4">
+        <div
+          onClick={() => setExpanded((x) => !x)}
+          className="p-3.5 sm:p-4 flex items-center justify-between cursor-pointer hover:bg-stone-100/80 transition select-none"
+        >
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-extrabold text-stone-800">{form.editId ? `✏️ Sửa Sản Phẩm #${form.editId}` : '➕ Thêm Sản Phẩm Mới'}</h3>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Ấn để mở / thu gọn</span>
+          </div>
+          <button type="button" className="px-3 py-1.5 rounded-xl text-xs font-bold text-white shadow-xs" style={{ backgroundColor: 'var(--accent-main)' }}>
+            {expanded ? '▲ Thu gọn' : '▼ Mở form'}
+          </button>
+        </div>
+
+        {expanded && (
+          <div className="p-4 pt-2 border-t space-y-3">
+            <div className="flex justify-end">
+              <button type="button" onClick={resetForm} className="text-xs underline text-stone-500">
+                Làm mới form
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <input type="text" value={form.name} onChange={(e) => update({ name: e.target.value })} placeholder="Tên sản phẩm *" className={inputClass} />
+              <select value={form.category} onChange={(e) => update({ category: e.target.value })} className={`${inputClass} font-medium`}>
+                {formCategories.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <input type="number" min={0} value={form.price} onChange={(e) => update({ price: e.target.value })} placeholder="Giá bán lẻ (đ) *" className={inputClass} />
+              <input type="number" min={0} value={form.oldPrice} onChange={(e) => update({ oldPrice: e.target.value })} placeholder="Giá gốc gạch (đ)" className={inputClass} />
+              <input type="number" min={0} value={form.combo5} onChange={(e) => update({ combo5: e.target.value })} placeholder="Giá combo từ 5 SP" className={inputClass} />
+              <input type="number" min={0} value={form.combo10} onChange={(e) => update({ combo10: e.target.value })} placeholder="Giá combo từ 10 SP" className={inputClass} />
+            </div>
+
+            <div className="flex flex-wrap gap-4 text-xs font-bold">
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" checked={form.inStock} onChange={(e) => update({ inStock: e.target.checked })} className="w-4 h-4" />
+                <span>✅ Còn hàng (Mở bán)</span>
+              </label>
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" checked={form.isOrder} onChange={(e) => update({ isOrder: e.target.checked })} className="w-4 h-4" />
+                <span>✈️ Là Hàng Order (Tách khỏi mục Tất cả)</span>
+              </label>
+            </div>
+
+            {/* Album nhiều ảnh sản phẩm */}
+            <div className="space-y-2">
+              <div className="text-xs font-bold text-stone-700">🖼️ Album ảnh sản phẩm (Chọn nhiều ảnh & bấm &quot;Đặt bìa&quot; để chọn ảnh chính):</div>
+              <div className="flex flex-wrap gap-2">
+                <label className="px-3 py-2 rounded-xl text-xs font-bold text-white cursor-pointer" style={{ backgroundColor: 'var(--accent-main)' }}>
+                  📷 Tải nhiều ảnh từ máy
+                  <input type="file" accept="image/*" multiple onChange={handleAlbumUpload} className="hidden" />
+                </label>
+                <div className="flex flex-1 min-w-[200px] gap-1.5">
+                  <input
+                    type="text"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') addImageUrl();
+                    }}
+                    placeholder="Hoặc dán link ảnh URL..."
+                    className="flex-1 px-3 py-1.5 rounded-xl border bg-white text-xs"
+                  />
+                  <button type="button" onClick={addImageUrl} className="px-3 py-1.5 rounded-xl text-xs font-bold bg-stone-800 text-white">
+                    + Link
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                {!form.album.length ? (
+                  <div className="col-span-full text-[11px] text-stone-400 py-2">Chưa có ảnh nào trong album. Hãy tải ảnh lên hoặc thêm link ảnh.</div>
+                ) : (
+                  form.album.map((src, idx) => (
+                    <div key={`${idx}-${src.slice(-24)}`} className="relative aspect-square rounded-xl overflow-hidden border bg-white group">
+                      <img src={src} alt={`Ảnh ${idx + 1}`} className="w-full h-full object-cover" />
+                      <div className="absolute inset-x-0 bottom-0 bg-black/60 p-1 flex items-center justify-between gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setCover(idx)}
+                          className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold ${idx === 0 ? 'bg-amber-400 text-stone-950' : 'bg-white/90 text-stone-800'}`}
+                        >
+                          {idx === 0 ? '★ Ảnh bìa' : 'Đặt bìa'}
+                        </button>
+                        <button type="button" onClick={() => removeAlbumImage(idx)} className="px-1.5 py-0.5 rounded bg-rose-600 text-white text-[9px] font-bold">
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Phân loại sản phẩm kèm giá & ảnh riêng */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-stone-700">🎨 Phân loại (Màu sắc / Size / Giá PL & Ảnh riêng):</span>
+                <button
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, variants: [...f.variants, { key: nextRowKey(), name: '', price: '', image: '' }] }))}
+                  className="px-2.5 py-1 rounded-lg text-xs font-bold bg-stone-800 text-white"
+                >
+                  + Thêm phân loại
+                </button>
+              </div>
+              <div className="space-y-1.5">
+                {form.variants.map((v) => (
+                  <div key={v.key} className="flex flex-wrap sm:flex-nowrap items-center gap-1.5 p-2 rounded-xl bg-white border">
+                    <input
+                      type="text"
+                      value={v.name}
+                      onChange={(e) => updateVariant(v.key, { name: e.target.value })}
+                      placeholder="Tên phân loại (VD: Đỏ Cherry / Size M)"
+                      className="flex-1 min-w-[130px] px-2.5 py-1.5 rounded-lg border text-xs"
+                    />
+                    <input
+                      type="number"
+                      min={0}
+                      value={v.price}
+                      onChange={(e) => updateVariant(v.key, { price: e.target.value })}
+                      placeholder="Giá PL (đ)"
+                      className="w-24 sm:w-28 px-2.5 py-1.5 rounded-lg border text-xs"
+                    />
+                    <input
+                      type="text"
+                      value={v.image}
+                      onChange={(e) => updateVariant(v.key, { image: e.target.value })}
+                      placeholder="Link/Data ảnh PL..."
+                      className="flex-1 min-w-[110px] px-2.5 py-1.5 rounded-lg border text-xs"
+                    />
+                    <label className="px-2 py-1.5 rounded-lg border bg-stone-50 hover:bg-stone-100 text-[11px] font-bold cursor-pointer shrink-0">
+                      📷
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => handleVariantImage(v.key, e)} />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, variants: f.variants.filter((x) => x.key !== v.key) }))}
+                      className="px-2 py-1.5 rounded-lg bg-rose-50 text-rose-700 text-xs font-bold shrink-0"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <textarea
+              rows={2}
+              value={form.description}
+              onChange={(e) => update({ description: e.target.value })}
+              placeholder="Mô tả chi tiết công dụng, chất liệu sản phẩm..."
+              className={`w-full ${inputClass}`}
+            />
+
+            <button
+              type="button"
+              onClick={saveProduct}
+              disabled={busy}
+              className="w-full py-3 rounded-2xl font-extrabold text-xs sm:text-sm text-white shadow disabled:opacity-60"
+              style={{ backgroundColor: 'var(--accent-main)' }}
+            >
+              {busy ? '⏳ Đang lưu...' : '💾 Lưu Sản Phẩm & Đồng Bộ Lên Web'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Danh sách sản phẩm hiện có */}
+      <div className="space-y-2.5">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <h3 className="text-sm font-extrabold">📦 Danh Sách Sản Phẩm Hiện Có</h3>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={recalcSold}
+              className="px-2.5 py-1.5 rounded-xl border bg-amber-50 text-amber-900 text-[11px] font-bold hover:bg-amber-100"
+            >
+              🔄 Tính lại số đã bán
+            </button>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Tìm nhanh SP..."
+              className="px-3 py-1.5 rounded-xl border text-xs w-44"
+            />
+          </div>
+        </div>
+        <div className="space-y-2 max-h-80 overflow-y-auto">
+          {!filtered.length ? (
+            <div className="text-center py-6 text-xs text-stone-400">Không có sản phẩm nào phù hợp.</div>
+          ) : (
+            filtered.map((p) => {
+              const isOut = p.inStock === false;
+              return (
+                <div key={p.id} className="p-2.5 rounded-2xl border bg-white flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <img
+                      src={p.images?.[0] || 'https://placehold.co/96x96/FAF5EF/7C583A?text=SP'}
+                      alt={p.name}
+                      className={`w-12 h-12 rounded-xl object-cover border shrink-0 ${isOut ? 'opacity-50' : ''}`}
+                    />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-xs font-extrabold text-stone-900 truncate">{p.name}</span>
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isOut ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}
+                        >
+                          {isOut ? 'Hết hàng' : 'Còn hàng'}
+                        </span>
+                        {isOrderProduct(p) && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">ORDER</span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-stone-500 mt-0.5">
+                        {p.category} • <b className="text-stone-800">{formatVND(p.price)}</b>
+                        {p.comboPrice5 > 0 && ` • 5+: ${formatVND(p.comboPrice5)}`}
+                        {p.comboPrice10 > 0 && ` • 10+: ${formatVND(p.comboPrice10)}`}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+                    <label className="flex items-center gap-1 px-2 py-1 rounded-xl bg-stone-50 border text-[11px] font-bold text-stone-700">
+                      <span>Đã bán:</span>
+                      <input
+                        key={`${p.id}-${p.sold}`}
+                        type="number"
+                        min={0}
+                        defaultValue={Number(p.sold || 0)}
+                        onBlur={(e) => adjustSold(p, e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') e.currentTarget.blur();
+                        }}
+                        className="w-14 px-1.5 py-0.5 rounded border bg-white text-xs font-extrabold text-center"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => toggleStock(p)}
+                      className="px-2.5 py-1.5 rounded-xl border text-[11px] font-bold bg-stone-50 hover:bg-stone-100"
+                    >
+                      {isOut ? 'Mở bán' : 'Hết hàng'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => editProduct(p)}
+                      className="px-2.5 py-1.5 rounded-xl bg-amber-100 text-amber-900 text-[11px] font-bold hover:bg-amber-200"
+                    >
+                      Sửa
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteProduct(p)}
+                      className="px-2.5 py-1.5 rounded-xl bg-rose-100 text-rose-700 text-[11px] font-bold hover:bg-rose-200"
+                    >
+                      Xóa
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
